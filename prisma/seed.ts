@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { isRiskyAnswer, scoreFromResponses } from "../src/lib/risk";
 
 const prisma = new PrismaClient();
 
@@ -124,6 +125,30 @@ const QUESTIONS: {
   },
 ];
 
+// Demo answers for Acme Cloud Hosting's completed assessment, aligned by
+// index with QUESTIONS above. Three answers are deliberately risky so the
+// demo shows flagged responses, generated findings, and a realistic score.
+const DEMO_ANSWERS = [
+  "YES", // encrypted at rest
+  "YES", // encrypted in transit
+  "YES", // retention policy
+  "NO", // MFA enforced -> flagged
+  "YES", // least-privilege access
+  "PARTIAL", // quarterly access review
+  "YES", // IR plan documented
+  "YES", // 72hr breach notification
+  "NO", // breach in last 24mo (NO is the good answer here)
+  "YES", // BCP/DR plan
+  "PARTIAL", // DR tested annually
+  "NO", // backups encrypted offsite -> flagged
+  "YES", // SOC 2 Type II
+  "NO", // willing to sign DPA -> flagged
+  "YES", // cyber liability insurance
+  "YES", // subprocessor list published
+  "YES", // notify before new subprocessor
+  "PARTIAL", // subprocessors contractually bound
+];
+
 async function main() {
   const template = await prisma.questionnaireTemplate.upsert({
     where: { id: "default-tprm-template" },
@@ -141,7 +166,7 @@ async function main() {
 
   const existingVendors = await prisma.vendor.count();
   if (existingVendors === 0) {
-    await prisma.vendor.create({
+    const acme = await prisma.vendor.create({
       data: {
         name: "Acme Cloud Hosting",
         description: "Primary IaaS provider hosting production workloads.",
@@ -156,7 +181,7 @@ async function main() {
       },
     });
 
-    await prisma.vendor.create({
+    const northwind = await prisma.vendor.create({
       data: {
         name: "Northwind Payroll",
         description: "Outsourced payroll processing for all employees.",
@@ -185,6 +210,100 @@ async function main() {
     });
 
     console.log("Seeded 3 sample vendors.");
+
+    // A completed assessment for Acme, with 3 flagged answers, so the demo
+    // shows a real score and populated dashboard out of the box.
+    const templateQuestions = await prisma.questionTemplate.findMany({
+      where: { templateId: template.id },
+      orderBy: { order: "asc" },
+    });
+
+    const responsesData = templateQuestions.map((q, i) => {
+      const answer = DEMO_ANSWERS[i] ?? "UNANSWERED";
+      return {
+        questionTemplateId: q.id,
+        category: q.category,
+        text: q.text,
+        weight: q.weight,
+        answer,
+        riskFlag: isRiskyAnswer(answer, q.riskyAnswer),
+      };
+    });
+
+    const score = scoreFromResponses(responsesData);
+
+    const assessment = await prisma.assessment.create({
+      data: {
+        vendorId: acme.id,
+        templateId: template.id,
+        title: "Standard Vendor Security Assessment — 2026",
+        status: "COMPLETED",
+        sentAt: new Date("2026-07-01"),
+        completedAt: new Date("2026-07-18"),
+        score,
+        responses: { create: responsesData },
+      },
+      include: { responses: true },
+    });
+
+    const findByText = (needle: string) =>
+      assessment.responses.find((r) => r.text.includes(needle))!;
+
+    await prisma.finding.create({
+      data: {
+        vendorId: acme.id,
+        assessmentId: assessment.id,
+        responseId: findByText("multi-factor authentication").id,
+        title: "No MFA enforced for administrative access",
+        description: "Flagged from the 2026 assessment. Vendor confirmed admin console access does not require MFA today.",
+        severity: "HIGH",
+        status: "IN_PROGRESS",
+        owner: "Jordan Lee (Acme)",
+        dueDate: new Date("2026-09-15"),
+      },
+    });
+
+    await prisma.finding.create({
+      data: {
+        vendorId: acme.id,
+        assessmentId: assessment.id,
+        responseId: findByText("Data Processing Agreement").id,
+        title: "Vendor has not signed our standard DPA",
+        description: "Legal review requested; vendor's counsel proposed redlines still outstanding.",
+        severity: "MEDIUM",
+        status: "OPEN",
+        owner: "Aaron",
+        dueDate: new Date("2026-07-30"), // in the past relative to seed date -> shows as overdue
+      },
+    });
+
+    await prisma.finding.create({
+      data: {
+        vendorId: acme.id,
+        assessmentId: assessment.id,
+        responseId: findByText("backups encrypted").id,
+        title: "Backups not encrypted / not geographically separated",
+        description: "Vendor enabled cross-region encrypted backups after remediation call.",
+        severity: "MEDIUM",
+        status: "RESOLVED",
+        owner: "Jordan Lee (Acme)",
+        resolvedAt: new Date("2026-08-05"),
+      },
+    });
+
+    await prisma.finding.create({
+      data: {
+        vendorId: northwind.id,
+        title: "Annual SOC 2 report not yet received for current cycle",
+        description: "Requested from vendor's compliance team; following up before contract renewal.",
+        severity: "HIGH",
+        status: "OPEN",
+        owner: "Aaron",
+        dueDate: new Date("2026-09-01"),
+      },
+    });
+
+    console.log("Seeded a completed assessment and 4 sample findings.");
   }
 
   console.log(`Seeded questionnaire template: ${template.name}`);
