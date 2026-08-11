@@ -51,7 +51,7 @@ See `prisma/schema.prisma`. SQLite has no native enum type, so status/tier/
 severity fields are plain strings constrained by the TypeScript literal
 types in `src/lib/types.ts`.
 
-Four questionnaire templates ship in `prisma/seed.ts`:
+Six questionnaire templates ship in `prisma/seed.ts`:
 
 - **Standard Vendor Security Assessment** — general-purpose baseline
   covering data security, access control, incident response, business
@@ -68,16 +68,23 @@ Four questionnaire templates ship in `prisma/seed.ts`:
   RTO/RPO, etc.) are kept as unscored informational questions answered via
   notes. **Not a pixel-for-pixel reproduction of the official
   spreadsheet** — treat EDUCAUSE's document as authoritative for a formal
-  HECVAT exchange with a vendor. The full HECVAT-AI addendum and the
-  consolidated HECVAT 4.1.5 (Full/Lite/On-Prem merged, 321 questions) exist
-  but aren't ported here.
+  HECVAT exchange with a vendor. The consolidated HECVAT 4.1.5
+  (Full/Lite/On-Prem merged, 321 questions) exists but isn't ported here.
+- **HECVAT-AI Addendum** — sourced from EDUCAUSE, pairs with HECVAT Lite
+  for a vendor whose product uses AI: model use, training-data provenance
+  and opt-out, transparency & governance (NIST AI RMF / ISO 42001
+  alignment).
 - **The Isaacs Group — Privacy & Compliance Assessment** — original
   questionnaire (not derived from any single external framework) covering
   FERPA, COPPA, PHI/HIPAA, a consolidated U.S. state privacy & breach-
   notification law baseline (not 50 individual per-state items), SOC 2,
   and ISO/IEC 27001.
+- **SIG-Parallel Lite (Isaacs)** — original Isaacs Group questionnaire
+  covering the eighteen risk domains addressed by Shared Assessments' SIG,
+  in independent wording (not derived from SIG's proprietary question
+  text) — use when a SIG license isn't available.
 
-All four are assignable per-vendor from the "New assessment" screen. Edit
+All six are assignable per-vendor from the "New assessment" screen. Edit
 `prisma/seed.ts` and re-run `npm run db:seed` to change any of them (it's
 idempotent — re-running it won't duplicate existing vendors/templates), or
 add more templates directly via Prisma Studio (`npx prisma studio`).

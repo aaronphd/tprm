@@ -860,6 +860,395 @@ const ISAACS_PRIVACY_QUESTIONS: {
   },
 ];
 
+// HECVAT-AI Addendum, sourced from EDUCAUSE — AI-specific supplement to
+// HECVAT covering model use, training data, transparency, and governance.
+// Same conversion approach as HECVAT Lite: descriptive/free-text source
+// items become unscored informational questions answered via notes.
+const HECVAT_AI_QUESTIONS: {
+  category: string;
+  text: string;
+  weight: number;
+  riskyAnswer: string;
+}[] = [
+  // AI Use in Product
+  {
+    category: "AI Use in Product",
+    text: "Does the product use artificial intelligence, machine learning, or generative AI? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "AI Use in Product",
+    text: "Describe the AI/ML use cases within the product. (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "AI Use in Product",
+    text: "Are third-party AI models or APIs used (OpenAI, Anthropic, Google, etc.)? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "AI Use in Product",
+    text: "Is model inference performed in-region, or is data sent to external providers? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  // Training Data
+  {
+    category: "Training Data",
+    text: "Is customer or end-user data used to train or fine-tune the vendor's AI models? (informational — not scored; use notes on the consent model: opt-in / default opt-in / no consent)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Training Data",
+    text: "Is there a documented mechanism for customers to opt out of having their data used for model training?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Training Data",
+    text: "Is training-data opt-out the default for enterprise or education-tier customers?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Training Data",
+    text: "What is the provenance of the training data (public web, licensed, synthetic, customer-provided)? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  // Transparency & Governance
+  {
+    category: "Transparency & Governance",
+    text: "Are end users notified when they are interacting with an AI system?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Transparency & Governance",
+    text: "Can users opt out of AI-driven features?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Transparency & Governance",
+    text: "Are human review or override mechanisms in place for consequential decisions?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Transparency & Governance",
+    text: "Have you conducted adversarial testing (red-teaming) of the AI system?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Transparency & Governance",
+    text: "Is your AI governance program aligned with NIST AI RMF or ISO/IEC 42001?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Transparency & Governance",
+    text: "Do you publish model or system cards describing capabilities and limitations?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Transparency & Governance",
+    text: "Have any AI-related incidents (hallucination harms, jailbreaks, biased outputs) occurred in the last 12 months?",
+    weight: 2,
+    riskyAnswer: "YES",
+  },
+];
+
+// SIG-Parallel Lite (Isaacs) — Isaacs Group original wording covering the
+// same eighteen risk domains addressed by Shared Assessments' SIG, for use
+// when a SIG license isn't available. Independent phrasing, not derived
+// from Shared Assessments' proprietary question text.
+const SIG_PARALLEL_LITE_QUESTIONS: {
+  category: string;
+  text: string;
+  weight: number;
+  riskyAnswer: string;
+}[] = [
+  // Enterprise Risk Management
+  {
+    category: "Enterprise Risk Management",
+    text: "Does the organization maintain a documented enterprise risk management program with executive oversight?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Enterprise Risk Management",
+    text: "Is cybersecurity risk formally reported to the board or governing body at a defined cadence? (informational — not scored; use notes for the cadence)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  // Security Policy
+  {
+    category: "Security Policy",
+    text: "Are information security policies documented, approved by leadership, and reviewed at least annually?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Security Policy",
+    text: "Are policies communicated to all personnel with attestation of receipt?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Organizational Security
+  {
+    category: "Organizational Security",
+    text: "Is there a named security leader (CISO or equivalent) with responsibility for the security program?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Organizational Security",
+    text: "Are security roles and responsibilities formally defined and documented?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Asset & Information Management
+  {
+    category: "Asset & Information Management",
+    text: "Is a current inventory of information assets and data classifications maintained?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Asset & Information Management",
+    text: "Are data-handling requirements defined for each classification level?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Human Resource Security
+  {
+    category: "Human Resource Security",
+    text: "Are background checks conducted on personnel with access to customer data, consistent with applicable law?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Human Resource Security",
+    text: "Is security awareness training required at onboarding and annually thereafter?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // Physical & Environmental Security
+  {
+    category: "Physical & Environmental Security",
+    text: "Are physical access controls in place at all facilities that process or store customer data?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Physical & Environmental Security",
+    text: "Are environmental protections (fire, power, cooling) documented and monitored?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // IT Operations Management
+  {
+    category: "IT Operations Management",
+    text: "Are documented operational procedures maintained for systems that support the service?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "IT Operations Management",
+    text: "Is capacity monitored and planned to prevent service degradation?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Communications & Operations Management
+  {
+    category: "Communications & Operations Management",
+    text: "Are configuration standards (hardening baselines) applied to servers, endpoints, and network devices?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Communications & Operations Management",
+    text: "Are system logs collected, monitored, and retained for a defined period?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // Access Control
+  {
+    category: "Access Control",
+    text: "Is access to customer data granted on a least-privilege, need-to-know basis?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Access Control",
+    text: "Is multi-factor authentication required for administrative and remote access?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Access Control",
+    text: "Are access rights reviewed at least quarterly and revoked promptly upon role change or termination?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // Application Security
+  {
+    category: "Application Security",
+    text: "Are secure coding standards followed in application development?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Application Security",
+    text: "Is application security testing (SAST/DAST/pen test) performed prior to release and periodically thereafter?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  // Cybersecurity Incident Management
+  {
+    category: "Cybersecurity Incident Management",
+    text: "Is an incident response plan documented and tested at least annually?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Cybersecurity Incident Management",
+    text: "What is the committed timeframe for notifying customers of a confirmed security incident affecting their data? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  // Business Resiliency
+  {
+    category: "Business Resiliency",
+    text: "Are business continuity and disaster recovery plans documented and tested?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Business Resiliency",
+    text: "What are the committed RTO and RPO for the service? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  // Compliance
+  {
+    category: "Compliance",
+    text: "List all current third-party attestations and certifications (SOC 2, ISO 27001, HITRUST, FedRAMP, PCI, etc.). (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Compliance",
+    text: "Are internal audits of the security program conducted at least annually?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // End User Device Security
+  {
+    category: "End User Device Security",
+    text: "Are endpoints managed with EDR/XDR and current anti-malware protection?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "End User Device Security",
+    text: "Are endpoint disks encrypted?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // Network Security
+  {
+    category: "Network Security",
+    text: "Are firewalls and network segmentation in place between environments?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Network Security",
+    text: "Are all remote-access channels protected by MFA and encrypted transport?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // Privacy
+  {
+    category: "Privacy",
+    text: "Is there a documented privacy program with a designated privacy leader?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Privacy",
+    text: "Are data subject rights (access, correction, deletion, portability) supported operationally?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Privacy",
+    text: "Are cross-border data transfer mechanisms in place where applicable (SCCs, IDTA, adequacy decisions)?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Threat Management
+  {
+    category: "Threat Management",
+    text: "Are threat intelligence feeds ingested and acted on operationally?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Threat Management",
+    text: "Is a formal vulnerability management program in place with SLAs by severity?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // Server Security
+  {
+    category: "Server Security",
+    text: "Are servers patched to a defined baseline within documented SLAs?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Server Security",
+    text: "Are hardened configurations applied and drift monitored?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Cloud Hosting Services
+  {
+    category: "Cloud Hosting Services",
+    text: "Which cloud service providers host the service, and in which regions? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Cloud Hosting Services",
+    text: "Is cloud configuration monitored for security drift (CSPM)?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Third-Party Risk Management
+  {
+    category: "Third-Party Risk Management",
+    text: "Is a documented third-party risk management program in place, including due diligence of subprocessors?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Third-Party Risk Management",
+    text: "Are customers notified in advance of material changes to subprocessors?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+];
+
 // Demo answers for Acme Cloud Hosting's completed assessment, aligned by
 // index with QUESTIONS above. Three answers are deliberately risky so the
 // demo shows flagged responses, generated findings, and a realistic score.
@@ -943,6 +1332,36 @@ async function main() {
     },
   });
   console.log(`Seeded questionnaire template: ${isaacsPrivacy.name}`);
+
+  const hecvatAi = await prisma.questionnaireTemplate.upsert({
+    where: { id: "hecvat-ai-addendum-template" },
+    update: {},
+    create: {
+      id: "hecvat-ai-addendum-template",
+      name: "HECVAT-AI Addendum",
+      description:
+        "Sourced from EDUCAUSE's HECVAT-AI addendum — a supplement to HECVAT covering AI/ML model use, training data provenance and opt-out, and transparency/governance. Pair with HECVAT Lite for a vendor whose product uses AI. Same conversion approach as HECVAT Lite: descriptive source items are kept as unscored informational questions answered via notes.",
+      questions: {
+        create: HECVAT_AI_QUESTIONS.map((q, i) => ({ ...q, order: i })),
+      },
+    },
+  });
+  console.log(`Seeded questionnaire template: ${hecvatAi.name}`);
+
+  const sigParallelLite = await prisma.questionnaireTemplate.upsert({
+    where: { id: "sig-parallel-lite-template" },
+    update: {},
+    create: {
+      id: "sig-parallel-lite-template",
+      name: "SIG-Parallel Lite (Isaacs)",
+      description:
+        "Original Isaacs Group questionnaire covering the eighteen risk domains addressed by Shared Assessments' SIG, in independent wording — not derived from Shared Assessments' proprietary question text. Use in engagements where a SIG license isn't available: Enterprise Risk Management, Security Policy, Organizational Security, Asset & Information Management, HR Security, Physical & Environmental Security, IT Operations, Communications & Operations, Access Control, Application Security, Incident Management, Business Resiliency, Compliance, End User Device Security, Network Security, Privacy, Threat Management, Server Security, Cloud Hosting, and Third-Party Risk Management.",
+      questions: {
+        create: SIG_PARALLEL_LITE_QUESTIONS.map((q, i) => ({ ...q, order: i })),
+      },
+    },
+  });
+  console.log(`Seeded questionnaire template: ${sigParallelLite.name}`);
 
   const existingVendors = await prisma.vendor.count();
   if (existingVendors === 0) {
