@@ -305,6 +305,561 @@ const HECVAT_LITE_QUESTIONS: {
   },
 ];
 
+// Real HECVAT Lite, sourced from EDUCAUSE (Higher Education Community
+// Vendor Assessment Toolkit) — https://www.educause.edu/higher-education-community-vendor-assessment-toolkit
+// Converted from the official free-text/select/yes-no-N/A question types
+// into this app's YES/NO/PARTIAL/NOT_APPLICABLE + weighted scoring model.
+// Purely descriptive/free-text items (company overview, contact info,
+// hosting location, RTO/RPO, notification-time commitments) are kept as
+// weight-0 "informational" questions -- they show up in the assessment so
+// nothing from the source document is silently dropped, but they're
+// answered via the per-question notes field rather than driving the score.
+const HECVAT_LITE_REAL_QUESTIONS: {
+  category: string;
+  text: string;
+  weight: number;
+  riskyAnswer: string;
+}[] = [
+  // Company Overview
+  {
+    category: "Company Overview",
+    text: "Provide a brief overview of your company and the service being assessed. (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Company Overview",
+    text: "How long has your company been in business? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Company Overview",
+    text: "Is the company headquartered in the United States?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Company Overview",
+    text: "Who will be the primary point of contact for security and privacy inquiries? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  // Documentation
+  {
+    category: "Documentation",
+    text: "Do you have a documented information security program?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Documentation",
+    text: "Do you have a documented privacy program?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Documentation",
+    text: "Are your security policies reviewed at least annually?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Documentation",
+    text: "Do you have a documented incident response plan?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Documentation",
+    text: "Do you have a documented business continuity / disaster recovery plan?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // Third Parties
+  {
+    category: "Third Parties",
+    text: "Does the solution rely on any third-party providers or subprocessors? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Third Parties",
+    text: "List all subprocessors that will process institutional data. (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Third Parties",
+    text: "Do you conduct security assessments of your subprocessors?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Third Parties",
+    text: "Do you provide advance notice to customers of subprocessor changes?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Application / Service Security
+  {
+    category: "Application / Service Security",
+    text: "Is the application scanned for vulnerabilities on a regular basis?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Application / Service Security",
+    text: "Do you conduct penetration testing at least annually?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Application / Service Security",
+    text: "Are secure coding standards followed (e.g. OWASP)?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Application / Service Security",
+    text: "Do you have a documented software development lifecycle (SDLC)?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Application / Service Security",
+    text: "Is a public-facing vulnerability disclosure program in place?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Authentication & Identity
+  {
+    category: "Authentication & Identity",
+    text: "Does the solution support single sign-on (SAML 2.0 or OIDC)?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Authentication & Identity",
+    text: "Does the solution support multi-factor authentication?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Authentication & Identity",
+    text: "Is MFA required for administrative access?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Authentication & Identity",
+    text: "Are password complexity and rotation policies enforced?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Authentication & Identity",
+    text: "Can customers configure their own password / MFA policies?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Data Handling
+  {
+    category: "Data Handling",
+    text: "Is data encrypted at rest using industry-standard algorithms?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Data Handling",
+    text: "Is data encrypted in transit (TLS 1.2 or higher)?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Data Handling",
+    text: "Where is customer data hosted geographically? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Data Handling",
+    text: "Do you have documented data retention and destruction procedures?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Data Handling",
+    text: "Can customers export their data upon request?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Data Handling",
+    text: "Is customer data logically or physically segregated from other customers?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Datacenter & Infrastructure
+  {
+    category: "Datacenter & Infrastructure",
+    text: "Are datacenter facilities SSAE 18 / SOC 2 certified or equivalent?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Datacenter & Infrastructure",
+    text: "Are physical access controls in place at all facilities?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Datacenter & Infrastructure",
+    text: "Do you maintain redundancy for critical infrastructure?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Business Continuity & DR
+  {
+    category: "Business Continuity & DR",
+    text: "What is your target recovery time objective (RTO)? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Business Continuity & DR",
+    text: "What is your target recovery point objective (RPO)? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Business Continuity & DR",
+    text: "Is the BC/DR plan tested at least annually?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Business Continuity & DR",
+    text: "Are backups encrypted and stored off-site?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // Change Management
+  {
+    category: "Change Management",
+    text: "Is there a documented change management process for production changes?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Change Management",
+    text: "Are changes tested prior to production deployment?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Change Management",
+    text: "Are customers notified in advance of major service changes?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Incident Response
+  {
+    category: "Incident Response",
+    text: "Do you have a documented breach notification process?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Incident Response",
+    text: "What is the maximum time to notify customers of a security incident? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "Incident Response",
+    text: "Do you conduct incident response tabletop exercises?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Incident Response",
+    text: "Do you maintain cyber insurance coverage?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // Privacy
+  {
+    category: "Privacy",
+    text: "Do you sell, rent, or trade any customer or end-user data?",
+    weight: 3,
+    riskyAnswer: "YES",
+  },
+  {
+    category: "Privacy",
+    text: "Do you use customer or end-user data for advertising?",
+    weight: 2,
+    riskyAnswer: "YES",
+  },
+  {
+    category: "Privacy",
+    text: "Do you provide a signed Data Processing Agreement (DPA)?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Privacy",
+    text: "Do you support data subject rights requests (access, correction, deletion)?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Privacy",
+    text: "Do you comply with FERPA when handling student educational records?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Privacy",
+    text: "Do you comply with COPPA when handling data of children under 13?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "Privacy",
+    text: "Are you a signatory to the Student Privacy Pledge?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // HIPAA (if applicable)
+  {
+    category: "HIPAA (if applicable)",
+    text: "Do you handle Protected Health Information (PHI)? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "HIPAA (if applicable)",
+    text: "Will you execute a Business Associate Agreement (BAA) with the customer?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "HIPAA (if applicable)",
+    text: "Have you completed a HIPAA Security Rule risk assessment in the last 12 months?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+];
+
+// The Isaacs Group — original privacy & compliance deep-dive. Not derived
+// from any single external framework document; questions are written to
+// probe FERPA, COPPA, PHI/HIPAA, the common baseline across state
+// comprehensive privacy laws, SOC 2, and ISO/IEC 27001 diligence points.
+// The "State Privacy & Breach Notification Laws" section is a consolidated
+// baseline rather than 50 individual per-state items -- confirm exact
+// state-specific deadlines separately (e.g. via a breach-notification
+// timeline workflow) if an actual incident occurs.
+const ISAACS_PRIVACY_QUESTIONS: {
+  category: string;
+  text: string;
+  weight: number;
+  riskyAnswer: string;
+}[] = [
+  // FERPA
+  {
+    category: "FERPA (Family Educational Rights & Privacy Act)",
+    text: "Does the vendor operate as a FERPA \"school official\" under the institution's direct control, per the school-official exception?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "FERPA (Family Educational Rights & Privacy Act)",
+    text: "Can directory-information designation be disabled per student upon institution or parent request?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "FERPA (Family Educational Rights & Privacy Act)",
+    text: "Is there a documented process for parents/eligible students to inspect and request correction of education records?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "FERPA (Family Educational Rights & Privacy Act)",
+    text: "Will education records be destroyed or returned within a defined period after contract termination?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // COPPA
+  {
+    category: "COPPA (Children's Online Privacy Protection Act)",
+    text: "Is the service directed to, or does it have actual knowledge of collecting personal information from, children under 13? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "COPPA (Children's Online Privacy Protection Act)",
+    text: "Where COPPA applies, is a COPPA-compliant consent mechanism in place (e.g. school-official consent under the FERPA exception, or verifiable parental consent)?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "COPPA (Children's Online Privacy Protection Act)",
+    text: "Is any behavioral advertising, tracking, or profiling performed on data collected from children under 13?",
+    weight: 3,
+    riskyAnswer: "YES",
+  },
+  {
+    category: "COPPA (Children's Online Privacy Protection Act)",
+    text: "Is there a defined retention period and deletion process for data collected from children?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // PHI / HIPAA
+  {
+    category: "PHI / HIPAA",
+    text: "Will the vendor access, create, or maintain Protected Health Information (PHI) as a HIPAA Business Associate or subcontracted Business Associate? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "PHI / HIPAA",
+    text: "Where PHI is involved, will the vendor execute a HIPAA Business Associate Agreement (BAA)?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "PHI / HIPAA",
+    text: "Is PHI encrypted at rest and in transit using industry-standard algorithms and key management?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "PHI / HIPAA",
+    text: "Does the vendor commit to breach notification consistent with the HIPAA Breach Notification Rule (no later than 60 days)?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "PHI / HIPAA",
+    text: "Do personnel with PHI access receive HIPAA workforce training on a recurring, documented basis?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "PHI / HIPAA",
+    text: "Has a HIPAA Security Rule risk assessment been completed within the last 12 months?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  // State privacy laws
+  {
+    category: "U.S. State Privacy & Breach Notification Laws",
+    text: "Is there an operational process to honor consumer/data-subject rights requests (access, correction, deletion, portability, opt-out of sale/sharing/targeted advertising) as required under applicable state comprehensive privacy laws (e.g. CCPA/CPRA and comparable state acts)?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "U.S. State Privacy & Breach Notification Laws",
+    text: "Is personal information sold, or shared/disclosed for cross-context behavioral advertising, as those terms are defined under state privacy laws?",
+    weight: 2,
+    riskyAnswer: "YES",
+  },
+  {
+    category: "U.S. State Privacy & Breach Notification Laws",
+    text: "Is a data processing/protection agreement available with state-law-required terms (purpose limitation, subprocessor flow-down, deletion/return obligations)?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "U.S. State Privacy & Breach Notification Laws",
+    text: "Does the vendor commit to notifying the institution of a security breach involving personal information without unreasonable delay, sufficient to meet the notification deadlines of all applicable state breach-notification laws?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "U.S. State Privacy & Breach Notification Laws",
+    text: "Are data protection/privacy impact assessments performed for processing activities presenting heightened risk, as required under several state privacy laws?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // SOC 2
+  {
+    category: "SOC 2",
+    text: "Has the vendor completed a SOC 2 audit (Type I or Type II)? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "SOC 2",
+    text: "Is the most recent SOC 2 report a Type II report covering an observation period of at least 6 months?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "SOC 2",
+    text: "Does the report's Trust Services Criteria scope include, at minimum, the Security (Common Criteria) category?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "SOC 2",
+    text: "Is the report dated within the last 12 months?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "SOC 2",
+    text: "Are there any qualified opinions, exceptions, or unresolved deviations noted in the report?",
+    weight: 2,
+    riskyAnswer: "YES",
+  },
+  {
+    category: "SOC 2",
+    text: "Will the vendor provide a bridge letter or updated report for any gap period between the report date and contract execution?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  // ISO/IEC 27001
+  {
+    category: "ISO/IEC 27001",
+    text: "Is the organization's Information Security Management System (ISMS) currently certified to ISO/IEC 27001? (informational — not scored; use notes for details)",
+    weight: 0,
+    riskyAnswer: "NOT_APPLICABLE",
+  },
+  {
+    category: "ISO/IEC 27001",
+    text: "Does the certification scope cover the systems, personnel, and facilities used to deliver the assessed service (not just a subset of the company)?",
+    weight: 3,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "ISO/IEC 27001",
+    text: "Is the certificate current (not expired) and issued by an accredited certification body?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "ISO/IEC 27001",
+    text: "Has the organization passed its most recent annual surveillance audit without major nonconformities?",
+    weight: 2,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "ISO/IEC 27001",
+    text: "Will the vendor provide a Statement of Applicability (SoA) or summary of applicable Annex A controls upon request?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+  {
+    category: "ISO/IEC 27001",
+    text: "Is the certification aligned to the ISO/IEC 27001:2022 revision (updated Annex A control set)?",
+    weight: 1,
+    riskyAnswer: "NO",
+  },
+];
+
 // Demo answers for Acme Cloud Hosting's completed assessment, aligned by
 // index with QUESTIONS above. Three answers are deliberately risky so the
 // demo shows flagged responses, generated findings, and a realistic score.
@@ -358,6 +913,36 @@ async function main() {
     },
   });
   console.log(`Seeded questionnaire template: ${hecvatLite.name}`);
+
+  const hecvatLiteReal = await prisma.questionnaireTemplate.upsert({
+    where: { id: "hecvat-lite-real-template" },
+    update: {},
+    create: {
+      id: "hecvat-lite-real-template",
+      name: "HECVAT Lite",
+      description:
+        "Sourced from EDUCAUSE's Higher Education Community Vendor Assessment Toolkit (HECVAT Lite) — https://www.educause.edu/higher-education-community-vendor-assessment-toolkit. Converted from the source document's free-text/select/yes-no-N/A question types into this app's weighted yes/no/partial/N/A scoring model; purely descriptive items (company overview, hosting location, RTO/RPO, etc.) are kept as unscored informational questions answered via notes. Not a pixel-for-pixel reproduction of the official spreadsheet — treat the official EDUCAUSE document as authoritative for a formal HECVAT exchange with a vendor.",
+      questions: {
+        create: HECVAT_LITE_REAL_QUESTIONS.map((q, i) => ({ ...q, order: i })),
+      },
+    },
+  });
+  console.log(`Seeded questionnaire template: ${hecvatLiteReal.name}`);
+
+  const isaacsPrivacy = await prisma.questionnaireTemplate.upsert({
+    where: { id: "isaacs-privacy-compliance-template" },
+    update: {},
+    create: {
+      id: "isaacs-privacy-compliance-template",
+      name: "The Isaacs Group — Privacy & Compliance Assessment",
+      description:
+        "Original Isaacs Group questionnaire for a privacy/compliance deep-dive: FERPA, COPPA, PHI/HIPAA, a consolidated U.S. state privacy & breach-notification law baseline, SOC 2, and ISO/IEC 27001. Not derived from any single external framework document. The state-privacy section is a consolidated baseline, not 50 individual per-state items — confirm exact state-specific deadlines separately if responding to an actual incident.",
+      questions: {
+        create: ISAACS_PRIVACY_QUESTIONS.map((q, i) => ({ ...q, order: i })),
+      },
+    },
+  });
+  console.log(`Seeded questionnaire template: ${isaacsPrivacy.name}`);
 
   const existingVendors = await prisma.vendor.count();
   if (existingVendors === 0) {

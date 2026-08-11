@@ -34,6 +34,16 @@ On later runs, once `.env` and `prisma/dev.db` already exist, `npm run dev` alon
   answer.
 - **Dashboard** (`/`) — vendor risk-tier breakdown, open findings by
   severity, overdue items, and assessments in flight.
+- **OSINT Snapshot** (on each vendor's detail page) — free, keyless outside-in
+  recon: SPF/DMARC/DKIM/DNSSEC via Google's DNS-over-HTTPS, the vendor's own
+  HTTPS response headers (HSTS/CSP/etc.), and subdomain enumeration via
+  certificate transparency (crt.sh) — run server-side (Server Action), so
+  unlike a pure-browser version it isn't blocked by CORS on crt.sh or the
+  target's headers. Point-in-time snapshot, not continuous monitoring. Below
+  that, one-click deep links into SSL Labs, Mozilla Observatory, Security
+  Headers, MXToolbox, Shodan, Censys, urlscan.io, VirusTotal, HIBP, Google
+  Safe Browsing, and DNSViz, plus a notes field to paste findings back. See
+  `src/lib/osint/`.
 
 ## Data model
 
@@ -41,22 +51,34 @@ See `prisma/schema.prisma`. SQLite has no native enum type, so status/tier/
 severity fields are plain strings constrained by the TypeScript literal
 types in `src/lib/types.ts`.
 
-Two questionnaire templates ship in `prisma/seed.ts`:
+Four questionnaire templates ship in `prisma/seed.ts`:
 
 - **Standard Vendor Security Assessment** — general-purpose baseline
   covering data security, access control, incident response, business
   continuity, compliance & legal, and subprocessor/fourth-party risk.
-- **HECVAT-Lite (K-12 Adapted)** — a lighter-weight questionnaire adapted
-  from the HECVAT-Lite structure for public school ed-tech procurement,
-  with added FERPA/COPPA/student-data-privacy questions. **This is not a
-  verbatim reproduction of the official EDUCAUSE HECVAT-Lite document** —
-  cross-check against the current official version before using it for a
-  binding procurement or compliance decision. The full HECVAT (~250
-  questions, aimed at higher-ed research-data-heavy engagements) isn't
-  included; add it the same way if that's ever needed.
+- **HECVAT-Lite (K-12 Adapted)** — an earlier, self-authored adaptation of
+  the HECVAT-Lite structure for public school ed-tech procurement. Kept
+  around (not deleted — Prisma won't let you delete a template with
+  existing assessments against it) now that the real one below exists;
+  prefer that one for new assessments.
+- **HECVAT Lite** — sourced from EDUCAUSE's Higher Education Community
+  Vendor Assessment Toolkit. 53 questions across the source document's 12
+  sections, converted into this app's weighted yes/no/partial/N/A scoring
+  model; purely descriptive items (company overview, hosting location,
+  RTO/RPO, etc.) are kept as unscored informational questions answered via
+  notes. **Not a pixel-for-pixel reproduction of the official
+  spreadsheet** — treat EDUCAUSE's document as authoritative for a formal
+  HECVAT exchange with a vendor. The full HECVAT-AI addendum and the
+  consolidated HECVAT 4.1.5 (Full/Lite/On-Prem merged, 321 questions) exist
+  but aren't ported here.
+- **The Isaacs Group — Privacy & Compliance Assessment** — original
+  questionnaire (not derived from any single external framework) covering
+  FERPA, COPPA, PHI/HIPAA, a consolidated U.S. state privacy & breach-
+  notification law baseline (not 50 individual per-state items), SOC 2,
+  and ISO/IEC 27001.
 
-Both are assignable per-vendor from the "New assessment" screen. Edit
-`prisma/seed.ts` and re-run `npm run db:seed` to change either one (it's
+All four are assignable per-vendor from the "New assessment" screen. Edit
+`prisma/seed.ts` and re-run `npm run db:seed` to change any of them (it's
 idempotent — re-running it won't duplicate existing vendors/templates), or
 add more templates directly via Prisma Studio (`npx prisma studio`).
 

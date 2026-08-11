@@ -21,6 +21,7 @@ import {
   PageHeader,
 } from "@/components/ui";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { OsintPanel } from "@/components/OsintPanel";
 
 export default async function VendorDetailPage({
   params,
@@ -34,6 +35,7 @@ export default async function VendorDetailPage({
     include: {
       assessments: { orderBy: { createdAt: "desc" }, include: { template: true } },
       findings: { orderBy: [{ status: "asc" }, { createdAt: "desc" }] },
+      osintScans: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!vendor) notFound();
@@ -187,6 +189,8 @@ export default async function VendorDetailPage({
               </Card>
             )}
           </section>
+
+          <OsintPanel vendorId={id} vendorWebsite={vendor.website} scans={vendor.osintScans} />
         </div>
       </div>
     </div>

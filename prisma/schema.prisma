@@ -31,6 +31,7 @@ model Vendor {
 
   assessments Assessment[]
   findings    Finding[]
+  osintScans  OsintScan[]
 }
 
 model QuestionnaireTemplate {
@@ -119,4 +120,19 @@ model Finding {
 
   @@index([vendorId])
   @@index([assessmentId])
+}
+
+// A point-in-time snapshot from the free OSINT toolkit (DNS-over-HTTPS +
+// certificate transparency, run server-side; see src/lib/osint). Not
+// continuous monitoring -- each row is one scan run on demand.
+model OsintScan {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  domain      String
+  createdAt   DateTime @default(now())
+  resultJson  String // JSON-encoded OsintResult (see src/lib/osint/types.ts)
+  manualNotes String? // pasted-back findings from manual deep-link checks
+
+  @@index([vendorId])
 }
