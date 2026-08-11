@@ -11,19 +11,15 @@ Built with Next.js (App Router), TypeScript, Tailwind CSS, and Prisma
 
 ```bash
 npm install
-npm run db:seed   # applies migrations (via prisma migrate) if needed and seeds
-                   # the default questionnaire template + sample vendors
+cp .env.example .env   # sets DATABASE_URL; .env itself is gitignored
+npx prisma migrate dev # first run only: creates prisma/dev.db
+npm run db:seed        # seeds the questionnaire template + sample vendors
 npm run dev
 ```
 
 Open http://localhost:3000.
 
-If this is the very first run and the SQLite database doesn't exist yet, run:
-
-```bash
-npx prisma migrate dev
-npm run db:seed
-```
+On later runs, once `.env` and `prisma/dev.db` already exist, `npm run dev` alone is enough.
 
 ## What's here
 
