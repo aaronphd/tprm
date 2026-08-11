@@ -41,11 +41,24 @@ See `prisma/schema.prisma`. SQLite has no native enum type, so status/tier/
 severity fields are plain strings constrained by the TypeScript literal
 types in `src/lib/types.ts`.
 
-The default questionnaire template (`prisma/seed.ts`) covers six domains:
-data security, access control, incident response, business continuity,
-compliance & legal, and subprocessor/fourth-party risk. Edit
-`prisma/seed.ts` and re-run `npm run db:seed` to change it, or add more
-templates directly via Prisma Studio (`npx prisma studio`).
+Two questionnaire templates ship in `prisma/seed.ts`:
+
+- **Standard Vendor Security Assessment** — general-purpose baseline
+  covering data security, access control, incident response, business
+  continuity, compliance & legal, and subprocessor/fourth-party risk.
+- **HECVAT-Lite (K-12 Adapted)** — a lighter-weight questionnaire adapted
+  from the HECVAT-Lite structure for public school ed-tech procurement,
+  with added FERPA/COPPA/student-data-privacy questions. **This is not a
+  verbatim reproduction of the official EDUCAUSE HECVAT-Lite document** —
+  cross-check against the current official version before using it for a
+  binding procurement or compliance decision. The full HECVAT (~250
+  questions, aimed at higher-ed research-data-heavy engagements) isn't
+  included; add it the same way if that's ever needed.
+
+Both are assignable per-vendor from the "New assessment" screen. Edit
+`prisma/seed.ts` and re-run `npm run db:seed` to change either one (it's
+idempotent — re-running it won't duplicate existing vendors/templates), or
+add more templates directly via Prisma Studio (`npx prisma studio`).
 
 ## Useful commands
 
