@@ -13,21 +13,22 @@ datasource db {
 }
 
 model Vendor {
-  id            String   @id @default(cuid())
-  name          String
-  description   String?
-  website       String?
-  category      String?
-  riskTier      String   @default("MEDIUM") // CRITICAL | HIGH | MEDIUM | LOW
-  status        String   @default("PROSPECTIVE") // PROSPECTIVE | ACTIVE | OFFBOARDING | INACTIVE
-  ownerName     String?
-  contactName   String?
-  contactEmail  String?
-  contractStart DateTime?
-  contractEnd   DateTime?
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String    @id @default(cuid())
+  name           String
+  description    String?
+  website        String?
+  category       String?
+  riskTier       String    @default("MEDIUM") // CRITICAL | HIGH | MEDIUM | LOW
+  status         String    @default("PROSPECTIVE") // PROSPECTIVE | ACTIVE | OFFBOARDING | INACTIVE
+  ownerName      String?
+  contactName    String?
+  contactEmail   String?
+  contractStart  DateTime?
+  contractEnd    DateTime?
+  notes          String?
+  dataCategories String? // JSON array of sensitive-data-category keys; see src/lib/types.ts DATA_CATEGORIES
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   assessments Assessment[]
   findings    Finding[]
@@ -96,8 +97,8 @@ model Response {
 
   findings Finding[]
 
-  @@index([assessmentId])
   @@unique([assessmentId, questionTemplateId])
+  @@index([assessmentId])
 }
 
 model Finding {

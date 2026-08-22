@@ -22,6 +22,8 @@ import {
 } from "@/components/ui";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { OsintPanel } from "@/components/OsintPanel";
+import { UnifiedRiskCard } from "@/components/UnifiedRiskCard";
+import type { OsintResult } from "@/lib/osint/types";
 
 export default async function VendorDetailPage({
   params,
@@ -41,6 +43,15 @@ export default async function VendorDetailPage({
   if (!vendor) notFound();
 
   const deleteAction = deleteVendor.bind(null, id);
+
+  const completedScores = vendor.assessments
+    .filter((a) => a.status === "COMPLETED" && a.score !== null)
+    .map((a) => a.score as number);
+
+  const latestOsintScan = vendor.osintScans[0];
+  const latestOsintResult = latestOsintScan
+    ? (JSON.parse(latestOsintScan.resultJson) as OsintResult)
+    : null;
 
   return (
     <div>
@@ -118,6 +129,13 @@ export default async function VendorDetailPage({
               </>
             ) : null}
           </Card>
+
+          <UnifiedRiskCard
+            dataCategoriesJson={vendor.dataCategories}
+            completedScores={completedScores}
+            latestOsintResult={latestOsintResult}
+            latestOsintScannedAt={latestOsintScan?.createdAt ?? null}
+          />
         </div>
 
         <div className="lg:col-span-2 space-y-6">

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { DATA_CATEGORY_LABELS, type DataCategory } from "@/lib/types";
 
 function optionalDate(value: FormDataEntryValue | null): Date | null {
   if (!value || typeof value !== "string" || value.trim() === "") return null;
@@ -12,6 +13,13 @@ function optionalDate(value: FormDataEntryValue | null): Date | null {
 function optionalString(value: FormDataEntryValue | null): string | null {
   if (!value || typeof value !== "string" || value.trim() === "") return null;
   return value.trim();
+}
+
+function dataCategoriesFromForm(formData: FormData): string | null {
+  const selected = formData
+    .getAll("dataCategories")
+    .filter((v): v is DataCategory => typeof v === "string" && v in DATA_CATEGORY_LABELS);
+  return selected.length > 0 ? JSON.stringify(selected) : null;
 }
 
 function vendorDataFromForm(formData: FormData) {
@@ -28,6 +36,7 @@ function vendorDataFromForm(formData: FormData) {
     contractStart: optionalDate(formData.get("contractStart")),
     contractEnd: optionalDate(formData.get("contractEnd")),
     notes: optionalString(formData.get("notes")),
+    dataCategories: dataCategoriesFromForm(formData),
   };
 }
 

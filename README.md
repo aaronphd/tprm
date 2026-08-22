@@ -34,6 +34,19 @@ On later runs, once `.env` and `prisma/dev.db` already exist, `npm run dev` alon
   answer.
 - **Dashboard** (`/`) — vendor risk-tier breakdown, open findings by
   severity, overdue items, and assessments in flight.
+- **Unified Risk Score** (on each vendor's detail page) — combines
+  inherent risk (which sensitive-data categories the vendor is classified
+  as touching — student PII, PHI, PCI, financial, etc., each pre-weighted
+  in `src/lib/types.ts`), control effectiveness (the average score across
+  the vendor's completed assessments), and residual risk signal boosts
+  computed automatically from its latest OSINT scan (missing DMARC/SPF/
+  HSTS/CSP, unvalidated DNSSEC, a large subdomain count, known CVEs from
+  Shodan). Deliberately excludes anything that needs manual upkeep (breach
+  history, financial health, etc.) — everything driving the score is
+  either a one-time classification or already-collected data, so it can't
+  silently go stale. Informational only — separate from, and doesn't
+  overwrite, the vendor's manually-assigned risk tier. See
+  `src/lib/unifiedRisk.ts`.
 - **OSINT Snapshot** (on each vendor's detail page) — free, keyless outside-in
   recon: SPF/DMARC/DKIM/DNSSEC via Google's DNS-over-HTTPS, the vendor's own
   HTTPS response headers (HSTS/CSP/etc.), subdomain enumeration via

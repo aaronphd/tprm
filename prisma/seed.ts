@@ -1377,6 +1377,7 @@ async function main() {
         contactEmail: "jordan@acmecloud.example",
         contractStart: new Date("2024-01-15"),
         contractEnd: new Date("2027-01-14"),
+        dataCategories: JSON.stringify(["financial", "consumerPII", "employeePII"]),
       },
     });
 
@@ -1392,6 +1393,7 @@ async function main() {
         contactEmail: "priya@northwindpay.example",
         contractStart: new Date("2023-06-01"),
         contractEnd: new Date("2026-05-31"),
+        dataCategories: JSON.stringify(["financial", "employeePII"]),
       },
     });
 
@@ -1405,6 +1407,7 @@ async function main() {
         ownerName: "Aaron",
         contactName: "Sam Torres",
         contactEmail: "sam@brightsign.example",
+        dataCategories: JSON.stringify(["consumerPII", "behavioral"]),
       },
     });
 

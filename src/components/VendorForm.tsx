@@ -1,5 +1,13 @@
 import type { Vendor } from "@prisma/client";
-import { label, RISK_TIERS, VENDOR_STATUSES } from "@/lib/types";
+import {
+  DATA_CATEGORIES,
+  DATA_CATEGORY_LABELS,
+  DATA_CATEGORY_WEIGHTS,
+  label,
+  parseDataCategories,
+  RISK_TIERS,
+  VENDOR_STATUSES,
+} from "@/lib/types";
 import { buttonPrimary, buttonSecondary, inputClass, labelClass } from "@/components/ui";
 import Link from "next/link";
 
@@ -17,6 +25,8 @@ export function VendorForm({
   action: (formData: FormData) => void;
   cancelHref: string;
 }) {
+  const selectedCategories = parseDataCategories(vendor?.dataCategories ?? null);
+
   return (
     <form action={action} className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -136,6 +146,29 @@ export function VendorForm({
             defaultValue={toDateInput(vendor?.contractEnd)}
             className={inputClass}
           />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className={labelClass}>Data sensitivity</label>
+          <p className="mb-2 text-xs text-slate-500">
+            What kind of data does this vendor access? Drives the inherent-risk portion of the
+            unified risk score on the vendor page.
+          </p>
+          <div className="grid grid-cols-1 gap-x-4 gap-y-1.5 sm:grid-cols-2">
+            {DATA_CATEGORIES.map((c) => (
+              <label key={c} className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  name="dataCategories"
+                  value={c}
+                  defaultChecked={selectedCategories.includes(c)}
+                  className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                />
+                {DATA_CATEGORY_LABELS[c]}
+                <span className="text-xs text-slate-400">({DATA_CATEGORY_WEIGHTS[c]})</span>
+              </label>
+            ))}
+          </div>
         </div>
 
         <div className="sm:col-span-2">

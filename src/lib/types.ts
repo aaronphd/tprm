@@ -63,3 +63,54 @@ export const LABELS: Record<string, string> = {
 export function label(value: string): string {
   return LABELS[value] ?? value;
 }
+
+// Sensitive-data categories a vendor may handle, used to weight inherent
+// risk in the unified risk score (see src/lib/unifiedRisk.ts). Weights are
+// illustrative starting points, not a regulatory determination -- adjust
+// to your own risk appetite.
+export const DATA_CATEGORY_LABELS = {
+  studentPII: "Student PII / education records",
+  studentUnder13: "Data from children under 13",
+  phi: "Protected Health Information (PHI)",
+  cji: "Criminal Justice Information (CJI)",
+  financial: "Financial account data",
+  pci: "Payment card data",
+  employeePII: "Employee PII",
+  consumerPII: "Consumer PII",
+  biometric: "Biometric identifiers",
+  genetic: "Genetic information",
+  location: "Precise location data",
+  behavioral: "Behavioral / usage analytics",
+  ai: "Data used to train AI models",
+} as const;
+
+export type DataCategory = keyof typeof DATA_CATEGORY_LABELS;
+
+export const DATA_CATEGORIES = Object.keys(DATA_CATEGORY_LABELS) as DataCategory[];
+
+export const DATA_CATEGORY_WEIGHTS: Record<DataCategory, number> = {
+  studentPII: 22,
+  studentUnder13: 28,
+  phi: 30,
+  cji: 30,
+  financial: 20,
+  pci: 22,
+  employeePII: 15,
+  consumerPII: 15,
+  biometric: 25,
+  genetic: 30,
+  location: 18,
+  behavioral: 8,
+  ai: 15,
+};
+
+export function parseDataCategories(json: string | null): DataCategory[] {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((c): c is DataCategory => c in DATA_CATEGORY_LABELS);
+  } catch {
+    return [];
+  }
+}
