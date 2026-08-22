@@ -86,9 +86,21 @@ On later runs, once `.env` and `prisma/dev.db` already exist, `npm run dev` alon
 - **Vendor risk report** (`/vendors/[id]/report`, linked as "View report"
   on the vendor page) — a print-optimized one-page summary combining the
   overview, unified risk score breakdown, latest OSINT snapshot, full
-  assessment history, and findings. Uses the browser's native print/
-  "Save as PDF" (no PDF library or external service) — the nav and page
-  chrome are hidden via `print:` CSS when printing.
+  assessment history, documents & evidence, and findings. Uses the
+  browser's native print/"Save as PDF" (no PDF library or external
+  service) — the nav and page chrome are hidden via `print:` CSS when
+  printing.
+- **Documents & Evidence** (on each vendor's detail page) — links out to
+  evidence that lives elsewhere: a signed DPA, insurance certificate,
+  SOC 2 report, or a full ISO 27001 Annex A / SOC 2 readiness workbook
+  produced by a separate tool. This app stores a title, URL, and optional
+  note per link — not the file and not the underlying control-by-control
+  data. (Deliberately out of scope here: the full 93-control ISO 27001
+  Annex A checklist and the full SOC 2 Trust Services Criteria are
+  audit/implementation checklists for your own ISMS — a different shape
+  of tool than vendor risk screening. The `control-mapping-engine` and
+  `soc2-readiness-assessor` skills in this environment are purpose-built
+  for that.)
 
 ## Data model
 

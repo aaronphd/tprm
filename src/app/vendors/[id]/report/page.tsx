@@ -37,6 +37,7 @@ export default async function VendorReportPage({
       assessments: { orderBy: { createdAt: "desc" }, include: { template: true } },
       findings: { orderBy: [{ status: "asc" }, { createdAt: "desc" }] },
       osintScans: { orderBy: { createdAt: "desc" }, take: 1 },
+      documents: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!vendor) notFound();
@@ -278,6 +279,25 @@ export default async function VendorReportPage({
               ))}
             </tbody>
           </table>
+        )}
+      </section>
+
+      <section className="mb-8 break-inside-avoid">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Documents &amp; evidence
+        </h2>
+        {vendor.documents.length === 0 ? (
+          <p className="text-sm text-slate-500">No documents linked.</p>
+        ) : (
+          <ul className="space-y-1 text-sm">
+            {vendor.documents.map((d) => (
+              <li key={d.id}>
+                <span className="font-medium text-slate-900">{d.title}</span>
+                <span className="text-slate-500"> — {d.url}</span>
+                {d.notes ? <span className="text-slate-500"> ({d.notes})</span> : null}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 

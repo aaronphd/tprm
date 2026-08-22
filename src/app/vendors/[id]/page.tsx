@@ -23,6 +23,7 @@ import {
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { OsintPanel } from "@/components/OsintPanel";
 import { UnifiedRiskCard } from "@/components/UnifiedRiskCard";
+import { VendorDocumentsPanel } from "@/components/VendorDocumentsPanel";
 import type { OsintResult } from "@/lib/osint/types";
 
 export default async function VendorDetailPage({
@@ -38,6 +39,7 @@ export default async function VendorDetailPage({
       assessments: { orderBy: { createdAt: "desc" }, include: { template: true } },
       findings: { orderBy: [{ status: "asc" }, { createdAt: "desc" }] },
       osintScans: { orderBy: { createdAt: "desc" } },
+      documents: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!vendor) notFound();
@@ -210,6 +212,8 @@ export default async function VendorDetailPage({
               </Card>
             )}
           </section>
+
+          <VendorDocumentsPanel vendorId={id} documents={vendor.documents} />
 
           <OsintPanel vendorId={id} vendorWebsite={vendor.website} scans={vendor.osintScans} />
         </div>
