@@ -8,8 +8,9 @@ Built with Next.js (App Router), TypeScript, Tailwind CSS, Prisma (SQLite), and
 Auth.js (NextAuth) credentials auth.
 
 Frameworks included out of the box: **ISO/IEC 27001:2022** (93 Annex A controls),
-**ISO/IEC 42001:2023** (AI management system controls), and **SOC 2** (AICPA Trust
-Services Criteria). See "Adding a framework" below to add more.
+**ISO/IEC 42001:2023** (AI management system controls), **SOC 2** (AICPA Trust
+Services Criteria), and **CJIS Security Policy v6.1** (20 policy areas). See
+"Adding a framework" below to add more.
 
 ## Getting started
 
@@ -78,6 +79,14 @@ one:
   control-by-control against the licensed text — treat it as a reasonable
   starting point, not a certified mapping. Validate before using it for formal
   certification prep.
+- **CJIS Security Policy** domain structure (the 20 policy areas: Information
+  Exchange Agreements, the 18 NIST SP 800-53 control families, Mobile Devices)
+  was verified via web search against current FBI CJIS publications as of
+  v6.1 (June 2026). The controls within each policy area are a representative
+  set built from general CJIS-specific knowledge, not a line-by-line reading
+  of the licensed policy text. Note: FBI CJIS audits through 2027-03-31 are
+  still conducted against the prior v5.9.5 — confirm which version your CSA
+  is auditing against before scoping an engagement.
 
 ## Scope notes
 
