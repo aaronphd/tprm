@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { scoreAssessment, maturityLabel } from "@/lib/scoring";
+import type { MaturityModel } from "@/lib/scoring";
 
 function csvEscape(value: string): string {
   if (/[",\n]/.test(value)) {
@@ -36,7 +37,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const score = scoreAssessment(assessment.framework.domains, assessment.responses, assessment.targetMaturity);
+  const maturityModel = assessment.framework.maturityModel as unknown as MaturityModel;
+  const score = scoreAssessment(assessment.framework.domains, assessment.responses, assessment.targetMaturity, maturityModel);
 
   let csv = csvRow(["Domain Code", "Domain Title", "Control Code", "Control Title", "Maturity", "Maturity Label", "Status", "Notes"]);
   for (const domain of score.domains) {
@@ -47,7 +49,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         control.code,
         control.title,
         control.maturity ?? "",
-        maturityLabel(control.maturity),
+        maturityLabel(control.maturity, maturityModel.levels),
         control.status,
         control.notes ?? "",
       ]);

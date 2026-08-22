@@ -32,11 +32,12 @@ model Organization {
 }
 
 model Framework {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  name        String
-  version     String
-  description String
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  version       String
+  description   String
+  maturityModel Json
 
   domains     Domain[]
   assessments Assessment[]

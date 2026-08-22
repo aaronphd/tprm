@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { cjis } from "./data/cjis";
 import { iso27001 } from "./data/iso27001";
@@ -10,14 +10,21 @@ import type { FrameworkSeed } from "./data/types";
 const prisma = new PrismaClient();
 
 async function seedFramework(fw: FrameworkSeed) {
+  const maturityModel = fw.maturityModel as unknown as Prisma.InputJsonValue;
   const framework = await prisma.framework.upsert({
     where: { slug: fw.slug },
-    update: { name: fw.name, version: fw.version, description: fw.description },
+    update: {
+      name: fw.name,
+      version: fw.version,
+      description: fw.description,
+      maturityModel,
+    },
     create: {
       slug: fw.slug,
       name: fw.name,
       version: fw.version,
       description: fw.description,
+      maturityModel,
     },
   });
 

@@ -1,11 +1,19 @@
-import type { Gap } from "@/lib/scoring";
+import type { Gap, MaturityLevel } from "@/lib/scoring";
 import { maturityLabel } from "@/lib/scoring";
 
-export function GapTable({ gaps, targetMaturity }: { gaps: Gap[]; targetMaturity: number }) {
+export function GapTable({
+  gaps,
+  targetMaturity,
+  maturityLevels,
+}: {
+  gaps: Gap[];
+  targetMaturity: number;
+  maturityLevels: MaturityLevel[];
+}) {
   if (gaps.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-        No gaps below the target maturity ({targetMaturity} &middot; {maturityLabel(targetMaturity)}).
+        No gaps below the target maturity ({targetMaturity} &middot; {maturityLabel(targetMaturity, maturityLevels)}).
       </div>
     );
   }
@@ -31,7 +39,7 @@ export function GapTable({ gaps, targetMaturity }: { gaps: Gap[]; targetMaturity
                 </p>
               </td>
               <td className="px-4 py-2.5 whitespace-nowrap text-slate-600">
-                {maturityLabel(gap.control.maturity)}
+                {maturityLabel(gap.control.maturity, maturityLevels)}
               </td>
               <td className="px-4 py-2.5 text-slate-500">{gap.control.notes ?? "—"}</td>
             </tr>

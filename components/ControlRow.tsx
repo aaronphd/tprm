@@ -3,17 +3,18 @@
 import { useState, useTransition } from "react";
 import type { ResponseStatus } from "@prisma/client";
 import { saveResponse } from "@/lib/actions/responses";
-import { MATURITY_LEVELS } from "@/lib/scoring";
+import type { MaturityLevel } from "@/lib/scoring";
 
 interface Props {
   assessmentId: string;
   control: { id: string; code: string; title: string; description: string };
+  maturityLevels: MaturityLevel[];
   initialMaturity: number | null;
   initialStatus: ResponseStatus;
   initialNotes: string | null;
 }
 
-export function ControlRow({ assessmentId, control, initialMaturity, initialStatus, initialNotes }: Props) {
+export function ControlRow({ assessmentId, control, maturityLevels, initialMaturity, initialStatus, initialNotes }: Props) {
   const [maturity, setMaturity] = useState(initialMaturity);
   const [status, setStatus] = useState<ResponseStatus>(initialStatus);
   const [notes, setNotes] = useState(initialNotes ?? "");
@@ -66,7 +67,7 @@ export function ControlRow({ assessmentId, control, initialMaturity, initialStat
 
       {!isNotApplicable && (
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          {MATURITY_LEVELS.map((level) => (
+          {maturityLevels.map((level) => (
             <button
               key={level.value}
               type="button"

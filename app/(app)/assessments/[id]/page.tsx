@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { scoreAssessment } from "@/lib/scoring";
+import type { MaturityModel } from "@/lib/scoring";
 import { completeAssessment } from "@/lib/actions/assessments";
 import { ControlRow } from "@/components/ControlRow";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -31,7 +32,8 @@ export default async function AssessmentWorkspacePage({
 
   if (!assessment) notFound();
 
-  const score = scoreAssessment(assessment.framework.domains, assessment.responses, assessment.targetMaturity);
+  const maturityModel = assessment.framework.maturityModel as unknown as MaturityModel;
+  const score = scoreAssessment(assessment.framework.domains, assessment.responses, assessment.targetMaturity, maturityModel);
   const progressPct = score.totalControls > 0 ? Math.round((score.answeredControls / score.totalControls) * 100) : 0;
   const responseByControl = new Map(assessment.responses.map((r) => [r.controlId, r]));
   const completeAssessmentWithId = completeAssessment.bind(null, assessment.id);
@@ -108,6 +110,7 @@ export default async function AssessmentWorkspacePage({
                       key={control.id}
                       assessmentId={assessment.id}
                       control={control}
+                      maturityLevels={maturityModel.levels}
                       initialMaturity={response?.maturity ?? null}
                       initialStatus={response?.status ?? "NOT_IMPLEMENTED"}
                       initialNotes={response?.notes ?? null}

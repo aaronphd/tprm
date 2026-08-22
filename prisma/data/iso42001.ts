@@ -1,4 +1,5 @@
 import type { FrameworkSeed } from "./types";
+import { CMMI_STYLE_MATURITY } from "./maturity-models";
 
 // Domain categories follow the general shape of ISO/IEC 42001:2023 Annex A
 // (AI management systems). Unlike the ISO 27001 file, this control set is built from
@@ -11,6 +12,7 @@ export const iso42001: FrameworkSeed = {
   version: "2023",
   description:
     "AI management system (AIMS) readiness assessment. Adapted for assessment purposes — validate against the licensed ISO/IEC 42001:2023 text before formal certification use.",
+  maturityModel: CMMI_STYLE_MATURITY,
   domains: [
     {
       code: "A.2",

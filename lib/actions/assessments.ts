@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import type { MaturityModel } from "@/lib/scoring";
 
 export async function createAssessment(formData: FormData) {
   const session = await auth();
@@ -16,12 +17,21 @@ export async function createAssessment(formData: FormData) {
     throw new Error("Organization, framework, and name are required");
   }
 
+  const framework = await prisma.framework.findUniqueOrThrow({ where: { id: frameworkId } });
+  const maturityModel = framework.maturityModel as unknown as MaturityModel;
+  const levels = [...maturityModel.levels].sort((a, b) => a.value - b.value);
+  // Default target: the level at the midpoint of the framework's own scale
+  // (e.g. "Defined" on the default 0-5 CMMI-style scale), not a fixed literal
+  // -- frameworks with a different maturity model get a sensible target too.
+  const defaultTargetMaturity = levels[Math.floor(levels.length / 2)]?.value ?? 0;
+
   const assessment = await prisma.assessment.create({
     data: {
       organizationId,
       frameworkId,
       name,
       createdById: session.user.id,
+      targetMaturity: defaultTargetMaturity,
     },
   });
 

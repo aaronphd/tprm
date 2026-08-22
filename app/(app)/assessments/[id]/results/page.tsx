@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { scoreAssessment } from "@/lib/scoring";
+import { scoreAssessment, maturityLabel } from "@/lib/scoring";
+import type { MaturityModel } from "@/lib/scoring";
 import { reopenAssessment } from "@/lib/actions/assessments";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ReadinessBandBadge } from "@/components/ReadinessBandBadge";
@@ -33,7 +34,8 @@ export default async function AssessmentResultsPage({
 
   if (!assessment) notFound();
 
-  const score = scoreAssessment(assessment.framework.domains, assessment.responses, assessment.targetMaturity);
+  const maturityModel = assessment.framework.maturityModel as unknown as MaturityModel;
+  const score = scoreAssessment(assessment.framework.domains, assessment.responses, assessment.targetMaturity, maturityModel);
   const reopenAssessmentWithId = reopenAssessment.bind(null, assessment.id);
 
   return (
@@ -93,12 +95,17 @@ export default async function AssessmentResultsPage({
           <Stat label="Controls" value={score.totalControls} />
           <Stat label="Applicable" value={score.applicableControls} />
           <Stat label="Answered" value={score.answeredControls} />
-          <Stat label="Target maturity" value={`${assessment.targetMaturity}`} />
+          <Stat
+            label="Target maturity"
+            value={`${assessment.targetMaturity} · ${maturityLabel(assessment.targetMaturity, maturityModel.levels)}`}
+          />
         </div>
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-slate-900">Readiness by domain</h2>
+        <h2 className="mb-3 text-sm font-semibold text-slate-900">
+          Readiness by domain <span className="font-normal text-slate-400">&middot; {maturityModel.name}</span>
+        </h2>
         <div className="rounded-lg border border-slate-200 bg-white p-6">
           <DomainScoreBars domains={score.domains} />
         </div>
@@ -108,7 +115,7 @@ export default async function AssessmentResultsPage({
         <h2 className="mb-3 text-sm font-semibold text-slate-900">
           Gaps below target ({score.gaps.length})
         </h2>
-        <GapTable gaps={score.gaps} targetMaturity={assessment.targetMaturity} />
+        <GapTable gaps={score.gaps} targetMaturity={assessment.targetMaturity} maturityLevels={maturityModel.levels} />
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import type { FrameworkSeed } from "./types";
+import { CMMI_STYLE_MATURITY } from "./maturity-models";
 
 // Function/category structure (6 functions, 22 categories) verified via web search
 // against NIST's published CSF 2.0 Core (Feb 2024) -- this corrects a stale category
@@ -13,6 +14,7 @@ export const nistCsf2: FrameworkSeed = {
   version: "2.0 (Feb 2024)",
   description:
     "NIST Cybersecurity Framework 2.0 readiness assessment across the 6 functions (Govern, Identify, Protect, Detect, Respond, Recover) and their 22 categories. Often paired with ISO 27001 for enterprise engagements.",
+  maturityModel: CMMI_STYLE_MATURITY,
   domains: [
     {
       code: "GV.OC",

@@ -1,4 +1,5 @@
 import type { FrameworkSeed } from "./types";
+import { CMMI_STYLE_MATURITY } from "./maturity-models";
 
 // Source: AICPA Trust Services Criteria (2017, with 2022 points-of-focus updates).
 // Control text is paraphrased for assessment purposes. Verify against current AICPA
@@ -9,6 +10,7 @@ export const soc2: FrameworkSeed = {
   version: "2017 (2022 revision)",
   description:
     "AICPA Trust Services Criteria readiness assessment. Common Criteria (CC1-CC9) plus the optional Availability, Confidentiality, and Privacy categories. Mark a category's controls Not Applicable if that category is out of scope for the engagement.",
+  maturityModel: CMMI_STYLE_MATURITY,
   domains: [
     {
       code: "CC1",

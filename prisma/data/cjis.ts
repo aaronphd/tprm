@@ -1,4 +1,5 @@
 import type { FrameworkSeed } from "./types";
+import { CMMI_STYLE_MATURITY } from "./maturity-models";
 
 // Structure verified via web search against current FBI CJIS publications (Aug 2026):
 // CJIS Security Policy v6.1 (published 2026-06-25) restructured the policy from the
@@ -18,6 +19,7 @@ export const cjis: FrameworkSeed = {
   version: "6.1 (June 2026)",
   description:
     "FBI Criminal Justice Information Services (CJIS) Security Policy readiness assessment, structured on the 20 policy areas introduced in v6.0/6.1 (Area 1: Information Exchange Agreements; Areas 2-19: the 18 NIST SP 800-53 control families; Area 20: Mobile Devices). Applies to any agency or vendor with access to Criminal Justice Information (CJI). Audits through 2027-03-31 are still conducted against the prior v5.9.5 — confirm which version applies before scoping.",
+  maturityModel: CMMI_STYLE_MATURITY,
   domains: [
     {
       code: "PA1",

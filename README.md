@@ -39,21 +39,20 @@ is enough.
 - **Assessments** (`/organizations/[id]`, `/assessments/[id]`) — pick a framework,
   start an assessment, then work through every control: a status (Not
   Implemented / Partial / Implemented / Not Applicable) and, for applicable
-  controls, a 0–5 maturity rating (Not Implemented → Ad Hoc → Repeatable →
-  Defined → Managed → Optimized), plus optional notes/evidence. Every change
-  autosaves.
+  controls, a maturity rating on that framework's own maturity model, plus
+  optional notes/evidence. Every change autosaves.
 - **Results** (`/assessments/[id]/results`) — overall readiness percentage and
   band (Initial/Developing/Defined/Managed/Optimized), a readiness-by-domain
   breakdown, and a gap list of every control scoring below the assessment's
-  target maturity (default: 3 · Defined). Export the full scored assessment as
-  CSV from here.
+  target maturity. Export the full scored assessment as CSV from here.
 - **Dashboard** (`/`) — organization and assessment counts, recent assessments
   across all clients.
 
 Scoring lives in `lib/scoring.ts`: a control's score is its maturity rating
 (controls marked Not Applicable are excluded from every average); a domain's
 score is the average maturity of its applicable controls; the overall readiness
-score is the average across all applicable controls in the assessment.
+score is the average across all applicable controls, expressed as a percentage
+of the framework's own maturity model maximum (see "Maturity models" below).
 
 ## Adding a framework
 
@@ -61,10 +60,31 @@ Frameworks, domains, and controls are pure data — no code changes needed to ad
 one:
 
 1. Add a new file under `prisma/data/` shaped like `prisma/data/soc2.ts` (a
-   `FrameworkSeed`: slug, name, version, description, and a list of domains each
-   with a list of controls).
+   `FrameworkSeed`: slug, name, version, description, a `maturityModel`, and a
+   list of domains each with a list of controls).
 2. Import it and add a `seedFramework(...)` call in `prisma/seed.ts`.
 3. Run `npm run db:seed` again — it's an upsert, safe to re-run.
+
+## Maturity models
+
+Each framework carries its own `maturityModel` (a name plus an ordered list of
+`{ value, label }` levels, starting at 0) rather than a single global scale —
+stored on the `Framework` row and read by the scoring engine, the assessment
+workspace, results page, and CSV export alike. All five frameworks currently
+in the app share the same one, `CMMI_STYLE_MATURITY` in
+`prisma/data/maturity-models.ts` (Not Implemented → Ad Hoc → Repeatable →
+Defined → Managed → Optimized, 0–5), imported by each framework's data file —
+but a new framework can define a different model (different levels, different
+count, different labels) and everything downstream — the maturity buttons in
+the workspace, the readiness percentage, the default target maturity, the gap
+list, the CSV — adapts automatically. `readinessBand()` (Initial/Developing/
+Defined/Managed/Optimized) stays model-agnostic since it operates on the
+resulting 0–100% score, not the raw scale.
+
+A new assessment's default target maturity is computed from its framework's
+own model (the level at the midpoint of the scale — e.g. "Defined" on the
+default 0–5 model), not a hardcoded literal — see `createAssessment` in
+`lib/actions/assessments.ts`.
 
 ## Notes on the seeded control data
 

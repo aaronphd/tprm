@@ -1,4 +1,5 @@
 import type { FrameworkSeed } from "./types";
+import { CMMI_STYLE_MATURITY } from "./maturity-models";
 
 // Domain/control titles and numbering follow the official ISO/IEC 27001:2022 Annex A
 // structure (4 themes, 93 controls). Descriptions are paraphrased for assessment
@@ -10,6 +11,7 @@ export const iso27001: FrameworkSeed = {
   version: "2022",
   description:
     "Information security management system (ISMS) readiness assessment against the 93 Annex A controls across the Organizational, People, Physical, and Technological themes.",
+  maturityModel: CMMI_STYLE_MATURITY,
   domains: [
     {
       code: "A.5",

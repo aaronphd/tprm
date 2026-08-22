@@ -1,17 +1,15 @@
 import type { Control, Domain, Response, ResponseStatus } from "@prisma/client";
+import type { MaturityLevel, MaturityModel } from "@/prisma/data/types";
 
-export const MATURITY_LEVELS = [
-  { value: 0, label: "Not Implemented" },
-  { value: 1, label: "Ad Hoc" },
-  { value: 2, label: "Repeatable" },
-  { value: 3, label: "Defined" },
-  { value: 4, label: "Managed" },
-  { value: 5, label: "Optimized" },
-] as const;
+export type { MaturityLevel, MaturityModel };
 
-export function maturityLabel(value: number | null | undefined): string {
+export function maturityLabel(value: number | null | undefined, levels: MaturityLevel[]): string {
   if (value == null) return "Not answered";
-  return MATURITY_LEVELS.find((l) => l.value === value)?.label ?? "Unknown";
+  return levels.find((l) => l.value === value)?.label ?? "Unknown";
+}
+
+export function maxMaturityValue(maturityModel: MaturityModel): number {
+  return Math.max(...maturityModel.levels.map((l) => l.value));
 }
 
 export function readinessBand(percentage: number): string {
@@ -64,7 +62,9 @@ export function scoreAssessment(
   domains: DomainWithControls[],
   responses: Response[],
   targetMaturity: number,
+  maturityModel: MaturityModel,
 ): AssessmentScore {
+  const maxMaturity = maxMaturityValue(maturityModel);
   const responseByControlId = new Map(responses.map((r) => [r.controlId, r]));
 
   const scoredDomains: ScoredDomain[] = domains.map((domain) => {
@@ -91,7 +91,7 @@ export function scoreAssessment(
       title: domain.title,
       controls,
       averageMaturity,
-      percentage: averageMaturity != null ? (averageMaturity / 5) * 100 : null,
+      percentage: averageMaturity != null ? (averageMaturity / maxMaturity) * 100 : null,
       applicableCount: applicable.length,
       answeredCount: answered.length,
     };
@@ -103,7 +103,7 @@ export function scoreAssessment(
     allApplicable.length > 0
       ? allApplicable.reduce((sum, c) => sum + (c.maturity ?? 0), 0) / allApplicable.length
       : null;
-  const overallPercentage = overallAverageMaturity != null ? (overallAverageMaturity / 5) * 100 : null;
+  const overallPercentage = overallAverageMaturity != null ? (overallAverageMaturity / maxMaturity) * 100 : null;
 
   const gaps: Gap[] = scoredDomains.flatMap((domain) =>
     domain.controls
