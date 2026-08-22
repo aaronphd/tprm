@@ -14,6 +14,7 @@ import type {
   ShodanResult,
   SpfResult,
   TlsCertResult,
+  UrlscanResult,
 } from "@/lib/osint/types";
 
 // Free, keyless OSINT lookups run server-side (this app already has a
@@ -458,6 +459,60 @@ async function lookupSecurityTxt(domain: string): Promise<SecurityTxtResult> {
   return { fetched: lastError === null, present: false, url: null, contact: null, error: lastError };
 }
 
+// urlscan.io's public Search API is keyless (read-only, no scan submitted
+// by this app). Finds prior scans of the domain by anyone; for the most
+// recent one, a second lookup against the full result endpoint gets its
+// verdict (search hits themselves don't reliably include one).
+async function lookupUrlscan(domain: string): Promise<UrlscanResult> {
+  const empty = { totalScans: 0, latestScanUrl: null, latestScanDate: null, malicious: null, maliciousScore: null };
+  try {
+    const r = await fetch(
+      `https://urlscan.io/api/v1/search/?q=domain:${encodeURIComponent(domain)}&size=10`,
+      { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
+    );
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+    const data = (await r.json()) as {
+      total?: number;
+      results?: { _id: string; task?: { time?: string } }[];
+    };
+    const totalScans = data.total ?? (data.results || []).length;
+    const latest = (data.results || [])[0];
+    if (!latest) {
+      return { fetched: true, error: null, ...empty };
+    }
+
+    let malicious: boolean | null = null;
+    let maliciousScore: number | null = null;
+    try {
+      const detailRes = await fetch(`https://urlscan.io/api/v1/result/${latest._id}/`, {
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (detailRes.ok) {
+        const detail = (await detailRes.json()) as {
+          verdicts?: { overall?: { malicious?: boolean; score?: number } };
+        };
+        malicious = detail.verdicts?.overall?.malicious ?? null;
+        maliciousScore = detail.verdicts?.overall?.score ?? null;
+      }
+    } catch {
+      // Verdict detail is best-effort -- scan count/date are still useful without it.
+    }
+
+    return {
+      fetched: true,
+      error: null,
+      totalScans,
+      latestScanUrl: `https://urlscan.io/result/${latest._id}/`,
+      latestScanDate: latest.task?.time ?? null,
+      malicious,
+      maliciousScore,
+    };
+  } catch (e) {
+    return { fetched: false, error: e instanceof Error ? e.message : String(e), ...empty };
+  }
+}
+
 export async function scanDomain(rawInput: string): Promise<OsintResult> {
   const domain = cleanDomain(rawInput);
   const validationError = validateDomain(domain);
@@ -509,6 +564,15 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
     blacklist: { fetched: false, error: null, checked: [] },
     rdap: { fetched: false, error: null, registeredOn: null, expiresOn: null, ageDays: null, registrar: null },
     securityTxt: { fetched: false, present: false, url: null, contact: null, error: null },
+    urlscan: {
+      fetched: false,
+      error: null,
+      totalScans: 0,
+      latestScanUrl: null,
+      latestScanDate: null,
+      malicious: null,
+      maliciousScore: null,
+    },
     errors,
   };
 
@@ -525,6 +589,7 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
     blacklistRes,
     rdapRes,
     securityTxtRes,
+    urlscanRes,
   ] = await Promise.allSettled([
     doh(domain, "TXT"),
     doh(`_dmarc.${domain}`, "TXT"),
@@ -538,6 +603,7 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
     lookupBlacklists(domain, ip),
     lookupRdap(domain),
     lookupSecurityTxt(domain),
+    lookupUrlscan(domain),
   ]);
 
   if (txtRes.status === "fulfilled") {
@@ -602,6 +668,11 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
     if (securityTxtRes.value.error) errors.push(`security.txt: ${securityTxtRes.value.error}`);
   }
 
+  if (urlscanRes.status === "fulfilled") {
+    result.urlscan = urlscanRes.value;
+    if (urlscanRes.value.error) errors.push(`urlscan.io: ${urlscanRes.value.error}`);
+  }
+
   return result;
 }
 
@@ -622,7 +693,7 @@ export function externalCheckLinks(domain: string): ExternalCheckLink[] {
     { name: "Shodan", url: `https://www.shodan.io/search?query=hostname%3A${d}`, purpose: "Full search UI (the scan above already pulls InternetDB)" },
     { name: "Censys", url: `https://search.censys.io/search?resource=hosts&q=${d}`, purpose: "Hosts + certificates" },
     { name: "crt.sh", url: `https://crt.sh/?q=%25.${d}`, purpose: "Certificate transparency (full list)" },
-    { name: "urlscan.io", url: `https://urlscan.io/search/#domain%3A${d}`, purpose: "Recent scans + verdicts" },
+    { name: "urlscan.io", url: `https://urlscan.io/search/#domain%3A${d}`, purpose: "Full scan history (the scan above already checks the latest verdict)" },
     { name: "VirusTotal", url: `https://www.virustotal.com/gui/domain/${d}`, purpose: "Threat intel aggregation" },
     { name: "HIBP", url: `https://haveibeenpwned.com/DomainSearch`, purpose: "Breach exposure (requires domain verification)" },
     { name: "Google Safe Browsing", url: `https://transparencyreport.google.com/safe-browsing/search?url=${d}`, purpose: "Malicious content check" },

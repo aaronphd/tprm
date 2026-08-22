@@ -127,6 +127,11 @@ export function computeResidualSignals(result: OsintResult | null): {
     reasons.push(`Domain registered only ${result.rdap.ageDays} day(s) ago (+4)`);
   }
 
+  if (result.urlscan.fetched && result.urlscan.malicious === true) {
+    total += 15;
+    reasons.push("Latest urlscan.io scan flagged this domain as malicious (+15)");
+  }
+
   if (result.headers.httpRedirectsToHttps === false) {
     total += 4;
     reasons.push("Plain HTTP does not redirect to HTTPS (+4)");

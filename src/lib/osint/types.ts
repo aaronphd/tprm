@@ -101,6 +101,19 @@ export type ShodanResult = {
   hostnames: string[];
 };
 
+// urlscan.io's public Search API is keyless. This app performs no scan
+// submissions of its own -- only reads scans other users/scanners have
+// already run against the domain.
+export type UrlscanResult = {
+  fetched: boolean;
+  error: string | null;
+  totalScans: number;
+  latestScanUrl: string | null;
+  latestScanDate: string | null;
+  malicious: boolean | null; // null = no scan found, or verdict unavailable
+  maliciousScore: number | null;
+};
+
 export type OsintResult = {
   domain: string;
   scannedAt: string;
@@ -116,6 +129,7 @@ export type OsintResult = {
   blacklist: BlacklistResult;
   rdap: RdapResult;
   securityTxt: SecurityTxtResult;
+  urlscan: UrlscanResult;
   errors: string[];
 };
 

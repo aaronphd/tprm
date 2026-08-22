@@ -217,6 +217,30 @@ function ScanResultGrid({ result }: { result: OsintResult }) {
         }
       />
       <ScanTile
+        label="urlscan.io verdict"
+        ok={result.urlscan.fetched ? result.urlscan.malicious !== true : null}
+        value={
+          !result.urlscan.fetched
+            ? "Lookup failed"
+            : result.urlscan.totalScans === 0
+              ? "No prior scans found"
+              : result.urlscan.malicious === true
+                ? `Flagged malicious (${result.urlscan.totalScans} scan(s) on file)`
+                : `Not flagged (${result.urlscan.totalScans} scan(s) on file)`
+        }
+        detail={
+          result.urlscan.fetched
+            ? [
+                result.urlscan.latestScanUrl ? `Latest scan: ${result.urlscan.latestScanUrl}` : null,
+                result.urlscan.latestScanDate ? `Scanned: ${formatDate(result.urlscan.latestScanDate)}` : null,
+                result.urlscan.maliciousScore !== null ? `Score: ${result.urlscan.maliciousScore}` : null,
+              ]
+                .filter(Boolean)
+                .join("\n") || undefined
+            : (result.urlscan.error ?? undefined)
+        }
+      />
+      <ScanTile
         label="Shodan InternetDB"
         ok={result.shodan.fetched ? result.shodan.vulns.length === 0 : null}
         value={
@@ -273,8 +297,9 @@ export function OsintPanel({
         <p className="mb-3 text-xs text-slate-500">
           Free, keyless lookups: public DNS (Google DoH), certificate transparency logs (crt.sh), a
           direct TLS handshake for the site&apos;s certificate, DNS blacklist checks, domain
-          registration age (RDAP), security.txt presence, and Shodan&apos;s InternetDB. This is a
-          snapshot at the moment you click Scan, not continuous monitoring — re-run it periodically.
+          registration age (RDAP), security.txt presence, Shodan&apos;s InternetDB, and urlscan.io
+          scan history. This is a snapshot at the moment you click Scan, not continuous monitoring —
+          re-run it periodically.
         </p>
         <form action={scanAction} className="flex flex-wrap items-end gap-3">
           <div className="min-w-[220px] flex-1">

@@ -48,8 +48,8 @@ On later runs, once `.env` and `prisma/dev.db` already exist, `npm run dev` alon
   computed automatically from its latest OSINT scan (missing DMARC/SPF/
   HSTS/CSP, unvalidated DNSSEC, a large subdomain count, known CVEs from
   Shodan, an expired/expiring/self-signed/weak-protocol TLS certificate, a
-  DNS blacklist listing, a very recently registered domain, and HTTP not
-  redirecting to HTTPS). Deliberately excludes anything that needs manual upkeep (breach
+  DNS blacklist listing, a very recently registered domain, HTTP not
+  redirecting to HTTPS, and a malicious urlscan.io verdict). Deliberately excludes anything that needs manual upkeep (breach
   history, financial health, etc.) — everything driving the score is
   either a one-time classification or already-collected data, so it can't
   silently go stale. Informational only — separate from, and doesn't
@@ -75,12 +75,20 @@ On later runs, once `.env` and `prisma/dev.db` already exist, `npm run dev` alon
   - Known open ports/CVEs via Shodan's free InternetDB lookup (no API key,
     no active scanning by this app — it reads whatever Shodan already has
     on file for the vendor's IP)
+  - **urlscan.io scan history** — keyless public Search API; whether the
+    domain's most recent scan (by anyone) was flagged malicious
 
   Point-in-time snapshot, not continuous monitoring. Below that, one-click
   deep links into SSL Labs, Mozilla Observatory, Security Headers,
-  MXToolbox, Shodan (full search UI), Censys, urlscan.io, VirusTotal,
-  HIBP, Google Safe Browsing, and DNSViz, plus a notes field to paste
-  findings back. See `src/lib/osint/`.
+  MXToolbox, Shodan (full search UI), Censys, urlscan.io (full scan
+  history), VirusTotal, HIBP, Google Safe Browsing, and DNSViz, plus a
+  notes field to paste findings back. See `src/lib/osint/`.
+- **Vendor risk report** (`/vendors/[id]/report`, linked as "View report"
+  on the vendor page) — a print-optimized one-page summary combining the
+  overview, unified risk score breakdown, latest OSINT snapshot, full
+  assessment history, and findings. Uses the browser's native print/
+  "Save as PDF" (no PDF library or external service) — the nav and page
+  chrome are hidden via `print:` CSS when printing.
 
 ## Data model
 

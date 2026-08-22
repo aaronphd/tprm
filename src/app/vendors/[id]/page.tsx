@@ -60,6 +60,9 @@ export default async function VendorDetailPage({
         description={vendor.description ?? undefined}
         action={
           <div className="flex gap-2">
+            <Link href={`/vendors/${id}/report`} className={buttonSecondary}>
+              View report
+            </Link>
             <Link href={`/vendors/${id}/edit`} className={buttonSecondary}>
               Edit
             </Link>
