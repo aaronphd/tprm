@@ -9,8 +9,9 @@ Auth.js (NextAuth) credentials auth.
 
 Frameworks included out of the box: **ISO/IEC 27001:2022** (93 Annex A controls),
 **ISO/IEC 42001:2023** (AI management system controls), **SOC 2** (AICPA Trust
-Services Criteria), and **CJIS Security Policy v6.1** (20 policy areas). See
-"Adding a framework" below to add more.
+Services Criteria), **CJIS Security Policy v6.1** (20 policy areas), and
+**NIST CSF 2.0** (6 functions, 22 categories). See "Adding a framework" below
+to add more.
 
 ## Getting started
 
@@ -87,6 +88,13 @@ one:
   of the licensed policy text. Note: FBI CJIS audits through 2027-03-31 are
   still conducted against the prior v5.9.5 — confirm which version your CSA
   is auditing against before scoping an engagement.
+- **NIST CSF 2.0** function/category structure (6 functions, 22 categories) was
+  verified via web search against NIST's published CSF 2.0 Core (Feb 2024) —
+  this corrected a stale category count (29, not 22) in the firm's own
+  control-mapping-engine skill notes. The controls within each category are a
+  representative set drawn from the framework's ~106 published subcategories,
+  not a verified line-by-line reproduction — validate against the official
+  NIST CSF 2.0 Core before formal use.
 
 ## Scope notes
 

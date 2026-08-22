@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { cjis } from "./data/cjis";
 import { iso27001 } from "./data/iso27001";
 import { iso42001 } from "./data/iso42001";
+import { nistCsf2 } from "./data/nist-csf2";
 import { soc2 } from "./data/soc2";
 import type { FrameworkSeed } from "./data/types";
 
@@ -82,6 +83,7 @@ async function main() {
   await seedFramework(iso42001);
   await seedFramework(soc2);
   await seedFramework(cjis);
+  await seedFramework(nistCsf2);
 
   console.log("Seeding admin user...");
   await seedAdminUser();
