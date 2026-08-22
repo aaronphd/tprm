@@ -6,6 +6,7 @@ import type {
   ExternalCheckLink,
   HeadersResult,
   OsintResult,
+  ShodanResult,
   SpfResult,
 } from "@/lib/osint/types";
 
@@ -186,6 +187,53 @@ async function lookupCrtSh(domain: string): Promise<CrtResult> {
   }
 }
 
+// Shodan's InternetDB is free and keyless: it returns whatever Shodan
+// already has on file for an IP (open ports, known CVEs, tags) from its
+// own passive internet-wide scanning. This app performs no active
+// scanning of its own -- it's a lookup against Shodan's existing data.
+async function lookupShodan(domain: string): Promise<ShodanResult> {
+  const empty = { ports: [], vulns: [], tags: [], hostnames: [] };
+  try {
+    const aRes = await doh(domain, "A");
+    const ip = (aRes.Answer || []).find((a) => a.type === 1)?.data;
+    if (!ip) {
+      return { fetched: false, error: "No A record found to look up", ip: null, ...empty };
+    }
+
+    const r = await fetch(`https://internetdb.shodan.io/${ip}`, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (r.status === 404) {
+      // Shodan has no data on file for this IP -- not an error, just empty.
+      return { fetched: true, error: null, ip, ...empty };
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
+    const data = (await r.json()) as {
+      ports?: number[];
+      vulns?: string[];
+      tags?: string[];
+      hostnames?: string[];
+    };
+    return {
+      fetched: true,
+      error: null,
+      ip,
+      ports: data.ports ?? [],
+      vulns: data.vulns ?? [],
+      tags: data.tags ?? [],
+      hostnames: data.hostnames ?? [],
+    };
+  } catch (e) {
+    return {
+      fetched: false,
+      error: e instanceof Error ? e.message : String(e),
+      ip: null,
+      ...empty,
+    };
+  }
+}
+
 export async function scanDomain(rawInput: string): Promise<OsintResult> {
   const domain = cleanDomain(rawInput);
   const validationError = validateDomain(domain);
@@ -211,10 +259,11 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
       referrerPolicy: null,
     },
     crt: { fetched: false, error: null, subdomainCount: null, subdomains: [], truncated: false },
+    shodan: { fetched: false, error: null, ip: null, ports: [], vulns: [], tags: [], hostnames: [] },
     errors,
   };
 
-  const [txtRes, dmarcRes, mxRes, dsRes, dkimRes, headersRes, crtRes] = await Promise.allSettled([
+  const [txtRes, dmarcRes, mxRes, dsRes, dkimRes, headersRes, crtRes, shodanRes] = await Promise.allSettled([
     doh(domain, "TXT"),
     doh(`_dmarc.${domain}`, "TXT"),
     doh(domain, "MX"),
@@ -222,6 +271,7 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
     lookupDkim(domain),
     lookupHeaders(domain),
     lookupCrtSh(domain),
+    lookupShodan(domain),
   ]);
 
   if (txtRes.status === "fulfilled") {
@@ -261,6 +311,11 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
     if (crtRes.value.error) errors.push(`crt.sh: ${crtRes.value.error}`);
   }
 
+  if (shodanRes.status === "fulfilled") {
+    result.shodan = shodanRes.value;
+    if (shodanRes.value.error) errors.push(`Shodan InternetDB: ${shodanRes.value.error}`);
+  }
+
   return result;
 }
 
@@ -278,7 +333,7 @@ export function externalCheckLinks(domain: string): ExternalCheckLink[] {
     { name: "Mozilla Observatory", url: `https://developer.mozilla.org/en-US/observatory/analyze?host=${d}`, purpose: "HTTP security headers" },
     { name: "Security Headers", url: `https://securityheaders.com/?q=${d}&followRedirects=on`, purpose: "Header grade (A+ to F)" },
     { name: "MXToolbox", url: `https://mxtoolbox.com/SuperTool.aspx?action=blacklist%3a${d}&run=toolpage`, purpose: "Blacklist + DNS health" },
-    { name: "Shodan", url: `https://www.shodan.io/search?query=hostname%3A${d}`, purpose: "Exposed services" },
+    { name: "Shodan", url: `https://www.shodan.io/search?query=hostname%3A${d}`, purpose: "Full search UI (the scan above already pulls InternetDB)" },
     { name: "Censys", url: `https://search.censys.io/search?resource=hosts&q=${d}`, purpose: "Hosts + certificates" },
     { name: "crt.sh", url: `https://crt.sh/?q=%25.${d}`, purpose: "Certificate transparency (full list)" },
     { name: "urlscan.io", url: `https://urlscan.io/search/#domain%3A${d}`, purpose: "Recent scans + verdicts" },

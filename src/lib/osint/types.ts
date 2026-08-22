@@ -41,6 +41,19 @@ export type CrtResult = {
   truncated: boolean;
 };
 
+// Shodan's free, keyless InternetDB endpoint (internetdb.shodan.io) --
+// looks up whatever Shodan already has on file for an IP: no active
+// scanning is performed by this app.
+export type ShodanResult = {
+  fetched: boolean;
+  error: string | null;
+  ip: string | null;
+  ports: number[];
+  vulns: string[];
+  tags: string[];
+  hostnames: string[];
+};
+
 export type OsintResult = {
   domain: string;
   scannedAt: string;
@@ -51,6 +64,7 @@ export type OsintResult = {
   mx: string[];
   headers: HeadersResult;
   crt: CrtResult;
+  shodan: ShodanResult;
   errors: string[];
 };
 

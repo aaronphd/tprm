@@ -114,6 +114,31 @@ function ScanResultGrid({ result }: { result: OsintResult }) {
             : (result.headers.error ?? undefined)
         }
       />
+      <ScanTile
+        label="Shodan InternetDB"
+        ok={result.shodan.fetched ? result.shodan.vulns.length === 0 : null}
+        value={
+          !result.shodan.fetched
+            ? "Lookup failed"
+            : result.shodan.vulns.length > 0
+              ? `${result.shodan.vulns.length} known CVE(s), ${result.shodan.ports.length} open port(s)`
+              : result.shodan.ports.length > 0
+                ? `No known CVEs, ${result.shodan.ports.length} open port(s)`
+                : "No data on file (not indexed by Shodan)"
+        }
+        detail={
+          result.shodan.fetched
+            ? [
+                result.shodan.ip ? `IP: ${result.shodan.ip}` : null,
+                result.shodan.ports.length ? `Ports: ${result.shodan.ports.join(", ")}` : null,
+                result.shodan.vulns.length ? `CVEs: ${result.shodan.vulns.join(", ")}` : null,
+                result.shodan.tags.length ? `Tags: ${result.shodan.tags.join(", ")}` : null,
+              ]
+                .filter(Boolean)
+                .join("\n") || undefined
+            : (result.shodan.error ?? undefined)
+        }
+      />
     </div>
   );
 }

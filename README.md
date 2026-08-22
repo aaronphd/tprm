@@ -36,13 +36,16 @@ On later runs, once `.env` and `prisma/dev.db` already exist, `npm run dev` alon
   severity, overdue items, and assessments in flight.
 - **OSINT Snapshot** (on each vendor's detail page) — free, keyless outside-in
   recon: SPF/DMARC/DKIM/DNSSEC via Google's DNS-over-HTTPS, the vendor's own
-  HTTPS response headers (HSTS/CSP/etc.), and subdomain enumeration via
-  certificate transparency (crt.sh) — run server-side (Server Action), so
-  unlike a pure-browser version it isn't blocked by CORS on crt.sh or the
-  target's headers. Point-in-time snapshot, not continuous monitoring. Below
-  that, one-click deep links into SSL Labs, Mozilla Observatory, Security
-  Headers, MXToolbox, Shodan, Censys, urlscan.io, VirusTotal, HIBP, Google
-  Safe Browsing, and DNSViz, plus a notes field to paste findings back. See
+  HTTPS response headers (HSTS/CSP/etc.), subdomain enumeration via
+  certificate transparency (crt.sh), and known open ports/CVEs via Shodan's
+  free InternetDB lookup (no API key, no active scanning by this app — it
+  reads whatever Shodan already has on file for the vendor's IP) — all run
+  server-side (Server Action), so unlike a pure-browser version it isn't
+  blocked by CORS on crt.sh or the target's headers. Point-in-time
+  snapshot, not continuous monitoring. Below that, one-click deep links
+  into SSL Labs, Mozilla Observatory, Security Headers, MXToolbox, Shodan
+  (full search UI), Censys, urlscan.io, VirusTotal, HIBP, Google Safe
+  Browsing, and DNSViz, plus a notes field to paste findings back. See
   `src/lib/osint/`.
 
 ## Data model
