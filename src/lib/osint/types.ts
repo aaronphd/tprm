@@ -31,6 +31,53 @@ export type HeadersResult = {
   xFrameOptions: string | null;
   xContentTypeOptions: string | null;
   referrerPolicy: string | null;
+  // null = couldn't determine (e.g. plain port 80 unreachable, which on
+  // its own isn't necessarily bad -- some setups block it entirely).
+  httpRedirectsToHttps: boolean | null;
+};
+
+// Read directly off the certificate via a raw TLS handshake -- no
+// external service involved, so this isn't blocked by anything a
+// third-party API might rate-limit or restrict.
+export type TlsCertResult = {
+  fetched: boolean;
+  error: string | null;
+  issuer: string | null;
+  subject: string | null;
+  validFrom: string | null;
+  validTo: string | null;
+  daysUntilExpiry: number | null;
+  protocol: string | null; // e.g. "TLSv1.3", "TLSv1.2"
+  selfSigned: boolean;
+};
+
+export type DnsblCheck = {
+  ip: string;
+  source: string; // e.g. "domain A record", "mail server (mx1.example.com)"
+  listedOn: string[]; // DNSBL zone names it's listed on, empty if clean
+};
+
+export type BlacklistResult = {
+  fetched: boolean;
+  error: string | null;
+  checked: DnsblCheck[];
+};
+
+export type RdapResult = {
+  fetched: boolean;
+  error: string | null;
+  registeredOn: string | null;
+  expiresOn: string | null;
+  ageDays: number | null;
+  registrar: string | null;
+};
+
+export type SecurityTxtResult = {
+  fetched: boolean;
+  present: boolean;
+  url: string | null;
+  contact: string[] | null;
+  error: string | null;
 };
 
 export type CrtResult = {
@@ -65,6 +112,10 @@ export type OsintResult = {
   headers: HeadersResult;
   crt: CrtResult;
   shodan: ShodanResult;
+  tls: TlsCertResult;
+  blacklist: BlacklistResult;
+  rdap: RdapResult;
+  securityTxt: SecurityTxtResult;
   errors: string[];
 };
 

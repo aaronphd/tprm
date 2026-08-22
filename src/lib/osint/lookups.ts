@@ -1,13 +1,19 @@
+import tls from "node:tls";
 import type {
+  BlacklistResult,
   CrtResult,
   DkimResult,
   DmarcResult,
+  DnsblCheck,
   DohResponse,
   ExternalCheckLink,
   HeadersResult,
   OsintResult,
+  RdapResult,
+  SecurityTxtResult,
   ShodanResult,
   SpfResult,
+  TlsCertResult,
 } from "@/lib/osint/types";
 
 // Free, keyless OSINT lookups run server-side (this app already has a
@@ -122,7 +128,23 @@ async function lookupDkim(domain: string): Promise<DkimResult> {
   };
 }
 
+async function checkHttpRedirectsToHttps(domain: string): Promise<boolean | null> {
+  try {
+    const r = await fetch(`http://${domain}/`, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers: { "User-Agent": "tprm-osint-toolkit/1.0" },
+    });
+    return r.url.startsWith("https://");
+  } catch {
+    // Couldn't connect on plain port 80 at all -- inconclusive, not
+    // necessarily bad (some setups block it outright rather than redirect).
+    return null;
+  }
+}
+
 async function lookupHeaders(domain: string): Promise<HeadersResult> {
+  const httpRedirectsPromise = checkHttpRedirectsToHttps(domain);
   try {
     const r = await fetch(`https://${domain}/`, {
       redirect: "follow",
@@ -138,6 +160,7 @@ async function lookupHeaders(domain: string): Promise<HeadersResult> {
       xFrameOptions: r.headers.get("x-frame-options"),
       xContentTypeOptions: r.headers.get("x-content-type-options"),
       referrerPolicy: r.headers.get("referrer-policy"),
+      httpRedirectsToHttps: await httpRedirectsPromise,
     };
   } catch (e) {
     return {
@@ -149,6 +172,7 @@ async function lookupHeaders(domain: string): Promise<HeadersResult> {
       xFrameOptions: null,
       xContentTypeOptions: null,
       referrerPolicy: null,
+      httpRedirectsToHttps: await httpRedirectsPromise,
     };
   }
 }
@@ -191,15 +215,14 @@ async function lookupCrtSh(domain: string): Promise<CrtResult> {
 // already has on file for an IP (open ports, known CVEs, tags) from its
 // own passive internet-wide scanning. This app performs no active
 // scanning of its own -- it's a lookup against Shodan's existing data.
-async function lookupShodan(domain: string): Promise<ShodanResult> {
+// Takes the already-resolved A record IP (see scanDomain) rather than
+// resolving its own, since the blacklist check needs the same IP.
+async function lookupShodanWithIp(ip: string | null): Promise<ShodanResult> {
   const empty = { ports: [], vulns: [], tags: [], hostnames: [] };
+  if (!ip) {
+    return { fetched: false, error: "No A record found to look up", ip: null, ...empty };
+  }
   try {
-    const aRes = await doh(domain, "A");
-    const ip = (aRes.Answer || []).find((a) => a.type === 1)?.data;
-    if (!ip) {
-      return { fetched: false, error: "No A record found to look up", ip: null, ...empty };
-    }
-
     const r = await fetch(`https://internetdb.shodan.io/${ip}`, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
@@ -225,13 +248,214 @@ async function lookupShodan(domain: string): Promise<ShodanResult> {
       hostnames: data.hostnames ?? [],
     };
   } catch (e) {
+    return { fetched: false, error: e instanceof Error ? e.message : String(e), ip, ...empty };
+  }
+}
+
+// Direct TLS handshake -- no external service, so nothing here can be
+// blocked by a third party's rate limit or availability. rejectUnauthorized
+// is deliberately false: we want to inspect the certificate even when it's
+// invalid or self-signed (that's itself a finding), and this connection is
+// used only to read the handshake metadata, never to exchange data.
+async function lookupTlsCertificate(domain: string): Promise<TlsCertResult> {
+  const empty = {
+    issuer: null,
+    subject: null,
+    validFrom: null,
+    validTo: null,
+    daysUntilExpiry: null,
+    protocol: null,
+    selfSigned: false,
+  };
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (result: TlsCertResult) => {
+      if (settled) return;
+      settled = true;
+      resolve(result);
+    };
+
+    const socket = tls.connect(
+      {
+        host: domain,
+        port: 443,
+        servername: domain,
+        rejectUnauthorized: false,
+        timeout: FETCH_TIMEOUT_MS,
+      },
+      () => {
+        const cert = socket.getPeerCertificate();
+        const protocol = socket.getProtocol();
+        socket.end();
+
+        if (!cert || Object.keys(cert).length === 0) {
+          finish({ fetched: false, error: "No certificate returned", ...empty });
+          return;
+        }
+
+        const validTo = cert.valid_to ? new Date(cert.valid_to) : null;
+        const validFrom = cert.valid_from ? new Date(cert.valid_from) : null;
+        const daysUntilExpiry =
+          validTo && !Number.isNaN(validTo.getTime())
+            ? Math.ceil((validTo.getTime() - Date.now()) / 86400000)
+            : null;
+        const selfSigned = Boolean(
+          cert.issuer && cert.subject && JSON.stringify(cert.issuer) === JSON.stringify(cert.subject)
+        );
+
+        const asString = (v: string | string[] | undefined): string | null =>
+          Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
+
+        finish({
+          fetched: true,
+          error: null,
+          issuer: asString(cert.issuer?.O) || asString(cert.issuer?.CN),
+          subject: asString(cert.subject?.CN),
+          validFrom: validFrom && !Number.isNaN(validFrom.getTime()) ? validFrom.toISOString() : null,
+          validTo: validTo && !Number.isNaN(validTo.getTime()) ? validTo.toISOString() : null,
+          daysUntilExpiry,
+          protocol: protocol ?? null,
+          selfSigned,
+        });
+      }
+    );
+
+    socket.on("error", (e) => finish({ fetched: false, error: e.message, ...empty }));
+    socket.on("timeout", () => {
+      socket.destroy();
+      finish({ fetched: false, error: "Connection timed out", ...empty });
+    });
+  });
+}
+
+const DNSBL_ZONES = ["zen.spamhaus.org", "bl.spamcop.net"];
+
+async function checkDnsblZones(ip: string): Promise<string[]> {
+  const reversed = ip.split(".").reverse().join(".");
+  const results = await Promise.all(
+    DNSBL_ZONES.map(async (zone) => {
+      try {
+        const res = await doh(`${reversed}.${zone}`, "A");
+        return res.Status === 0 && (res.Answer || []).length > 0 ? zone : null;
+      } catch {
+        return null;
+      }
+    })
+  );
+  return results.filter((z): z is string => Boolean(z));
+}
+
+// Reverse-DNS blacklist check against Spamhaus ZEN + SpamCop -- both
+// queryable over plain DNS (no API key). Checks the domain's own resolved
+// IP and, separately, its mail server's IP if it has one. Low-volume,
+// occasional lookups like this are well within normal acceptable use for
+// these lists; this isn't a bulk/automated scanning tool.
+async function lookupBlacklists(domain: string, ip: string | null): Promise<BlacklistResult> {
+  const targets: { ip: string; source: string }[] = [];
+  if (ip) targets.push({ ip, source: "domain A record" });
+
+  try {
+    const mxRes = await doh(domain, "MX");
+    const mxData = (mxRes.Answer || [])[0]?.data;
+    const mxHost = mxData?.trim().split(/\s+/).pop()?.replace(/\.$/, "");
+    if (mxHost) {
+      const mxARes = await doh(mxHost, "A");
+      const mxIp = (mxARes.Answer || []).find((a) => a.type === 1)?.data;
+      if (mxIp && mxIp !== ip) targets.push({ ip: mxIp, source: `mail server (${mxHost})` });
+    }
+  } catch {
+    // No MX record or resolution failed -- proceed with whatever targets exist.
+  }
+
+  if (targets.length === 0) {
+    return { fetched: false, error: "No IP addresses found to check", checked: [] };
+  }
+
+  const checked: DnsblCheck[] = await Promise.all(
+    targets.map(async (t) => ({ ip: t.ip, source: t.source, listedOn: await checkDnsblZones(t.ip) }))
+  );
+  return { fetched: true, error: null, checked };
+}
+
+type RdapVcardField = [string, Record<string, unknown>, string, ...unknown[]];
+type RdapEntity = { roles?: string[]; handle?: string; vcardArray?: [string, RdapVcardField[]] };
+type RdapResponseShape = { events?: { eventAction?: string; eventDate?: string }[]; entities?: RdapEntity[] };
+
+function extractRegistrarName(entities: RdapEntity[] | undefined): string | null {
+  const registrar = (entities || []).find((e) => (e.roles || []).includes("registrar"));
+  if (!registrar) return null;
+  const vcard = registrar.vcardArray?.[1];
+  if (Array.isArray(vcard)) {
+    const fn = vcard.find((v) => Array.isArray(v) && v[0] === "fn");
+    if (fn && typeof fn[3] === "string") return fn[3];
+  }
+  return registrar.handle ?? null;
+}
+
+// RDAP is the free, keyless, standardized WHOIS replacement. rdap.org runs
+// a public bootstrap proxy that redirects to the right registry for
+// whatever TLD the domain is under, so this app doesn't need its own
+// per-TLD bootstrap logic.
+async function lookupRdap(domain: string): Promise<RdapResult> {
+  try {
+    const r = await fetch(`https://rdap.org/domain/${domain}`, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers: { Accept: "application/rdap+json" },
+      redirect: "follow",
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = (await r.json()) as RdapResponseShape;
+    const events = data.events || [];
+    const registeredOn = events.find((e) => e.eventAction === "registration")?.eventDate ?? null;
+    const expiresOn = events.find((e) => e.eventAction === "expiration")?.eventDate ?? null;
+    const ageDays = registeredOn
+      ? Math.floor((Date.now() - new Date(registeredOn).getTime()) / 86400000)
+      : null;
+    return {
+      fetched: true,
+      error: null,
+      registeredOn,
+      expiresOn,
+      ageDays,
+      registrar: extractRegistrarName(data.entities),
+    };
+  } catch (e) {
     return {
       fetched: false,
       error: e instanceof Error ? e.message : String(e),
-      ip: null,
-      ...empty,
+      registeredOn: null,
+      expiresOn: null,
+      ageDays: null,
+      registrar: null,
     };
   }
+}
+
+// RFC 9116 security.txt -- presence correlates with the vendor actually
+// having a vulnerability-disclosure process. Checks the current canonical
+// location first, then falls back to the older root-level path.
+async function lookupSecurityTxt(domain: string): Promise<SecurityTxtResult> {
+  const candidates = [`https://${domain}/.well-known/security.txt`, `https://${domain}/security.txt`];
+  let lastError: string | null = null;
+
+  for (const url of candidates) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), redirect: "follow" });
+      if (r.ok) {
+        const text = await r.text();
+        const contact = text
+          .split("\n")
+          .filter((l) => l.trim().toLowerCase().startsWith("contact:"))
+          .map((l) => l.slice(l.indexOf(":") + 1).trim());
+        return { fetched: true, present: true, url, contact: contact.length ? contact : null, error: null };
+      }
+      lastError = null; // a clean 404 is absence, not an error
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+    }
+  }
+  return { fetched: lastError === null, present: false, url: null, contact: null, error: lastError };
 }
 
 export async function scanDomain(rawInput: string): Promise<OsintResult> {
@@ -240,6 +464,16 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
   if (validationError) throw new Error(validationError);
 
   const errors: string[] = [];
+
+  // Resolved once and shared by both the Shodan and blacklist checks.
+  let ip: string | null = null;
+  try {
+    const aRes = await doh(domain, "A");
+    ip = (aRes.Answer || []).find((a) => a.type === 1)?.data ?? null;
+  } catch {
+    // Downstream checks handle a null IP gracefully.
+  }
+
   const result: OsintResult = {
     domain,
     scannedAt: new Date().toISOString(),
@@ -257,13 +491,41 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
       xFrameOptions: null,
       xContentTypeOptions: null,
       referrerPolicy: null,
+      httpRedirectsToHttps: null,
     },
     crt: { fetched: false, error: null, subdomainCount: null, subdomains: [], truncated: false },
     shodan: { fetched: false, error: null, ip: null, ports: [], vulns: [], tags: [], hostnames: [] },
+    tls: {
+      fetched: false,
+      error: null,
+      issuer: null,
+      subject: null,
+      validFrom: null,
+      validTo: null,
+      daysUntilExpiry: null,
+      protocol: null,
+      selfSigned: false,
+    },
+    blacklist: { fetched: false, error: null, checked: [] },
+    rdap: { fetched: false, error: null, registeredOn: null, expiresOn: null, ageDays: null, registrar: null },
+    securityTxt: { fetched: false, present: false, url: null, contact: null, error: null },
     errors,
   };
 
-  const [txtRes, dmarcRes, mxRes, dsRes, dkimRes, headersRes, crtRes, shodanRes] = await Promise.allSettled([
+  const [
+    txtRes,
+    dmarcRes,
+    mxRes,
+    dsRes,
+    dkimRes,
+    headersRes,
+    crtRes,
+    shodanRes,
+    tlsRes,
+    blacklistRes,
+    rdapRes,
+    securityTxtRes,
+  ] = await Promise.allSettled([
     doh(domain, "TXT"),
     doh(`_dmarc.${domain}`, "TXT"),
     doh(domain, "MX"),
@@ -271,7 +533,11 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
     lookupDkim(domain),
     lookupHeaders(domain),
     lookupCrtSh(domain),
-    lookupShodan(domain),
+    lookupShodanWithIp(ip),
+    lookupTlsCertificate(domain),
+    lookupBlacklists(domain, ip),
+    lookupRdap(domain),
+    lookupSecurityTxt(domain),
   ]);
 
   if (txtRes.status === "fulfilled") {
@@ -314,6 +580,26 @@ export async function scanDomain(rawInput: string): Promise<OsintResult> {
   if (shodanRes.status === "fulfilled") {
     result.shodan = shodanRes.value;
     if (shodanRes.value.error) errors.push(`Shodan InternetDB: ${shodanRes.value.error}`);
+  }
+
+  if (tlsRes.status === "fulfilled") {
+    result.tls = tlsRes.value;
+    if (tlsRes.value.error) errors.push(`TLS certificate: ${tlsRes.value.error}`);
+  }
+
+  if (blacklistRes.status === "fulfilled") {
+    result.blacklist = blacklistRes.value;
+    if (blacklistRes.value.error) errors.push(`Blacklist check: ${blacklistRes.value.error}`);
+  }
+
+  if (rdapRes.status === "fulfilled") {
+    result.rdap = rdapRes.value;
+    if (rdapRes.value.error) errors.push(`RDAP: ${rdapRes.value.error}`);
+  }
+
+  if (securityTxtRes.status === "fulfilled") {
+    result.securityTxt = securityTxtRes.value;
+    if (securityTxtRes.value.error) errors.push(`security.txt: ${securityTxtRes.value.error}`);
   }
 
   return result;

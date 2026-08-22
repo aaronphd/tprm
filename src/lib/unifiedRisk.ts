@@ -32,7 +32,9 @@ export function computeControlScore(completedScores: number[]): number | null {
 
 const CVE_POINTS_PER_VULN = 5;
 const CVE_POINTS_CAP = 20;
-const SIGNAL_CAP = 50;
+const SIGNAL_CAP = 60;
+const WEAK_TLS_PROTOCOLS = ["TLSv1", "TLSv1.1"];
+const NEW_DOMAIN_THRESHOLD_DAYS = 180;
 
 export function computeResidualSignals(result: OsintResult | null): {
   total: number;
@@ -88,6 +90,46 @@ export function computeResidualSignals(result: OsintResult | null): {
     const pts = Math.min(CVE_POINTS_CAP, result.shodan.vulns.length * CVE_POINTS_PER_VULN);
     total += pts;
     reasons.push(`${result.shodan.vulns.length} known CVE(s) on file for the resolved IP (+${pts})`);
+  }
+
+  if (result.tls.fetched) {
+    if (result.tls.daysUntilExpiry !== null && result.tls.daysUntilExpiry < 0) {
+      total += 8;
+      reasons.push(`TLS certificate expired ${Math.abs(result.tls.daysUntilExpiry)} day(s) ago (+8)`);
+    } else if (
+      result.tls.daysUntilExpiry !== null &&
+      result.tls.daysUntilExpiry >= 0 &&
+      result.tls.daysUntilExpiry <= 30
+    ) {
+      total += 3;
+      reasons.push(`TLS certificate expires in ${result.tls.daysUntilExpiry} day(s) (+3)`);
+    }
+    if (result.tls.selfSigned) {
+      total += 6;
+      reasons.push("TLS certificate is self-signed (+6)");
+    }
+    if (result.tls.protocol && WEAK_TLS_PROTOCOLS.includes(result.tls.protocol)) {
+      total += 5;
+      reasons.push(`Weak TLS protocol negotiated (${result.tls.protocol}) (+5)`);
+    }
+  }
+
+  if (result.blacklist.fetched && result.blacklist.checked.some((c) => c.listedOn.length > 0)) {
+    const listed = result.blacklist.checked.filter((c) => c.listedOn.length > 0);
+    total += 8;
+    reasons.push(
+      `Listed on a DNS blacklist: ${listed.map((c) => `${c.ip} (${c.source}) on ${c.listedOn.join(", ")}`).join("; ")} (+8)`
+    );
+  }
+
+  if (result.rdap.fetched && result.rdap.ageDays !== null && result.rdap.ageDays < NEW_DOMAIN_THRESHOLD_DAYS) {
+    total += 4;
+    reasons.push(`Domain registered only ${result.rdap.ageDays} day(s) ago (+4)`);
+  }
+
+  if (result.headers.httpRedirectsToHttps === false) {
+    total += 4;
+    reasons.push("Plain HTTP does not redirect to HTTPS (+4)");
   }
 
   return { total: Math.min(SIGNAL_CAP, total), reasons };

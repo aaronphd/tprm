@@ -47,25 +47,40 @@ On later runs, once `.env` and `prisma/dev.db` already exist, `npm run dev` alon
   the vendor's completed assessments), and residual risk signal boosts
   computed automatically from its latest OSINT scan (missing DMARC/SPF/
   HSTS/CSP, unvalidated DNSSEC, a large subdomain count, known CVEs from
-  Shodan). Deliberately excludes anything that needs manual upkeep (breach
+  Shodan, an expired/expiring/self-signed/weak-protocol TLS certificate, a
+  DNS blacklist listing, a very recently registered domain, and HTTP not
+  redirecting to HTTPS). Deliberately excludes anything that needs manual upkeep (breach
   history, financial health, etc.) — everything driving the score is
   either a one-time classification or already-collected data, so it can't
   silently go stale. Informational only — separate from, and doesn't
   overwrite, the vendor's manually-assigned risk tier. See
   `src/lib/unifiedRisk.ts`.
 - **OSINT Snapshot** (on each vendor's detail page) — free, keyless outside-in
-  recon: SPF/DMARC/DKIM/DNSSEC via Google's DNS-over-HTTPS, the vendor's own
-  HTTPS response headers (HSTS/CSP/etc.), subdomain enumeration via
-  certificate transparency (crt.sh), and known open ports/CVEs via Shodan's
-  free InternetDB lookup (no API key, no active scanning by this app — it
-  reads whatever Shodan already has on file for the vendor's IP) — all run
-  server-side (Server Action), so unlike a pure-browser version it isn't
-  blocked by CORS on crt.sh or the target's headers. Point-in-time
-  snapshot, not continuous monitoring. Below that, one-click deep links
-  into SSL Labs, Mozilla Observatory, Security Headers, MXToolbox, Shodan
-  (full search UI), Censys, urlscan.io, VirusTotal, HIBP, Google Safe
-  Browsing, and DNSViz, plus a notes field to paste findings back. See
-  `src/lib/osint/`.
+  recon, all run server-side (Server Action, so unlike a pure-browser
+  version it isn't blocked by CORS on crt.sh, the target's headers, or the
+  raw TLS handshake):
+  - SPF/DMARC/DKIM/DNSSEC via Google's DNS-over-HTTPS
+  - The vendor's own HTTPS response headers (HSTS/CSP/etc.) and whether
+    plain HTTP redirects to HTTPS
+  - Subdomain enumeration via certificate transparency (crt.sh)
+  - **TLS certificate health** — a direct TLS handshake (Node's `tls`
+    module, no external service) reads the actual certificate: expiry,
+    issuer, negotiated protocol (flags TLS 1.0/1.1), self-signed detection
+  - **DNS blacklist check** — reverse-DNS lookup against Spamhaus ZEN and
+    SpamCop for the domain's IP and its mail server's IP
+  - **Domain age** via RDAP (the free, keyless WHOIS replacement) —
+    registration date, registrar, expiration
+  - **security.txt presence** (RFC 9116) — a vulnerability-disclosure
+    contact correlates with security maturity
+  - Known open ports/CVEs via Shodan's free InternetDB lookup (no API key,
+    no active scanning by this app — it reads whatever Shodan already has
+    on file for the vendor's IP)
+
+  Point-in-time snapshot, not continuous monitoring. Below that, one-click
+  deep links into SSL Labs, Mozilla Observatory, Security Headers,
+  MXToolbox, Shodan (full search UI), Censys, urlscan.io, VirusTotal,
+  HIBP, Google Safe Browsing, and DNSViz, plus a notes field to paste
+  findings back. See `src/lib/osint/`.
 
 ## Data model
 

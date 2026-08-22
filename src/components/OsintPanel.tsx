@@ -115,6 +115,108 @@ function ScanResultGrid({ result }: { result: OsintResult }) {
         }
       />
       <ScanTile
+        label="HTTP → HTTPS"
+        ok={result.headers.httpRedirectsToHttps}
+        value={
+          result.headers.httpRedirectsToHttps === null
+            ? "Port 80 unreachable"
+            : result.headers.httpRedirectsToHttps
+              ? "Redirects to HTTPS"
+              : "Does NOT redirect to HTTPS"
+        }
+      />
+      <ScanTile
+        label="TLS certificate"
+        ok={
+          result.tls.fetched
+            ? !(
+                (result.tls.daysUntilExpiry !== null && result.tls.daysUntilExpiry < 0) ||
+                result.tls.selfSigned ||
+                (result.tls.protocol && ["TLSv1", "TLSv1.1"].includes(result.tls.protocol))
+              )
+            : null
+        }
+        warn={
+          result.tls.fetched &&
+          result.tls.daysUntilExpiry !== null &&
+          result.tls.daysUntilExpiry >= 0 &&
+          result.tls.daysUntilExpiry <= 30
+        }
+        value={
+          !result.tls.fetched
+            ? "Lookup failed"
+            : result.tls.daysUntilExpiry !== null && result.tls.daysUntilExpiry < 0
+              ? `Expired ${Math.abs(result.tls.daysUntilExpiry)}d ago`
+              : result.tls.selfSigned
+                ? "Self-signed certificate"
+                : `Valid, expires in ${result.tls.daysUntilExpiry}d (${result.tls.protocol ?? "unknown protocol"})`
+        }
+        detail={
+          result.tls.fetched
+            ? [
+                result.tls.subject ? `Subject: ${result.tls.subject}` : null,
+                result.tls.issuer ? `Issuer: ${result.tls.issuer}` : null,
+                result.tls.validFrom ? `Valid from: ${formatDate(result.tls.validFrom)}` : null,
+                result.tls.validTo ? `Valid to: ${formatDate(result.tls.validTo)}` : null,
+              ]
+                .filter(Boolean)
+                .join("\n") || undefined
+            : (result.tls.error ?? undefined)
+        }
+      />
+      <ScanTile
+        label="Blacklist (DNSBL)"
+        ok={result.blacklist.fetched ? !result.blacklist.checked.some((c) => c.listedOn.length > 0) : null}
+        value={
+          !result.blacklist.fetched
+            ? (result.blacklist.error ?? "Lookup failed")
+            : result.blacklist.checked.some((c) => c.listedOn.length > 0)
+              ? "Listed on a blacklist"
+              : `Not listed (${result.blacklist.checked.length} IP(s) checked)`
+        }
+        detail={
+          result.blacklist.fetched
+            ? result.blacklist.checked
+                .map((c) => `${c.ip} (${c.source}): ${c.listedOn.length ? c.listedOn.join(", ") : "clean"}`)
+                .join("\n") || undefined
+            : undefined
+        }
+      />
+      <ScanTile
+        label="Domain age (RDAP)"
+        ok={null}
+        warn={result.rdap.fetched && result.rdap.ageDays !== null && result.rdap.ageDays < 180}
+        value={
+          !result.rdap.fetched
+            ? "Lookup failed"
+            : result.rdap.ageDays !== null
+              ? `${result.rdap.ageDays} days old`
+              : "Registration date unavailable"
+        }
+        detail={
+          result.rdap.fetched
+            ? [
+                result.rdap.registeredOn ? `Registered: ${formatDate(result.rdap.registeredOn)}` : null,
+                result.rdap.expiresOn ? `Expires: ${formatDate(result.rdap.expiresOn)}` : null,
+                result.rdap.registrar ? `Registrar: ${result.rdap.registrar}` : null,
+              ]
+                .filter(Boolean)
+                .join("\n") || undefined
+            : (result.rdap.error ?? undefined)
+        }
+      />
+      <ScanTile
+        label="security.txt"
+        ok={result.securityTxt.present}
+        value={result.securityTxt.present ? "Found" : "Not found"}
+        detail={
+          result.securityTxt.present
+            ? [result.securityTxt.url, ...(result.securityTxt.contact ?? [])].filter(Boolean).join("\n") ||
+              undefined
+            : undefined
+        }
+      />
+      <ScanTile
         label="Shodan InternetDB"
         ok={result.shodan.fetched ? result.shodan.vulns.length === 0 : null}
         value={
@@ -169,9 +271,10 @@ export function OsintPanel({
 
       <Card className="mb-4 p-5">
         <p className="mb-3 text-xs text-slate-500">
-          Free, keyless lookups run against public DNS (Google DoH) and certificate transparency logs
-          (crt.sh), plus the vendor&apos;s own HTTPS response headers. This is a snapshot at the moment
-          you click Scan, not continuous monitoring — re-run it periodically.
+          Free, keyless lookups: public DNS (Google DoH), certificate transparency logs (crt.sh), a
+          direct TLS handshake for the site&apos;s certificate, DNS blacklist checks, domain
+          registration age (RDAP), security.txt presence, and Shodan&apos;s InternetDB. This is a
+          snapshot at the moment you click Scan, not continuous monitoring — re-run it periodically.
         </p>
         <form action={scanAction} className="flex flex-wrap items-end gap-3">
           <div className="min-w-[220px] flex-1">
