@@ -33,7 +33,9 @@ On later runs, once `.env` and `prisma/dev.db` already exist, `npm run dev` alon
   due date, either logged manually or generated from a flagged assessment
   answer.
 - **Dashboard** (`/`) — vendor risk-tier breakdown, open findings by
-  severity, overdue items, and assessments in flight.
+  severity, overdue items, assessments in flight, and a "Top vendors by
+  residual risk" ranking (all vendors' unified risk scores, highest
+  first) with a "Highest residual risk" stat card pointing at #1.
 - **Unified Risk Score** (on each vendor's detail page) — combines
   inherent risk (which sensitive-data categories the vendor is classified
   as touching — student PII, PHI, PCI, financial, etc., each pre-weighted
