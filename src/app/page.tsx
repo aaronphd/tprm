@@ -4,12 +4,15 @@ import { label, parseDataCategories, RISK_TIERS, FINDING_SEVERITIES } from "@/li
 import { FINDING_STATUS_BADGE, TIER_BADGE, scoreColor } from "@/lib/risk";
 import { computeUnifiedRisk } from "@/lib/unifiedRisk";
 import type { OsintResult } from "@/lib/osint/types";
-import { formatDate } from "@/lib/format";
+import { formatDate, daysUntil } from "@/lib/format";
 import { Badge, Card, EmptyState, PageHeader, StatCard } from "@/components/ui";
 import { TierPieChart } from "@/components/charts/TierPieChart";
 import { SeverityBarChart } from "@/components/charts/SeverityBarChart";
 
 export default async function DashboardPage() {
+  const in90Days = new Date();
+  in90Days.setDate(in90Days.getDate() + 90);
+
   const [
     totalVendors,
     vendorsByTierRaw,
@@ -20,6 +23,11 @@ export default async function DashboardPage() {
     completedAssessments,
     upcomingAssessments,
     vendorsForRisk,
+    contractsExpiringSoon,
+    contractsExpiringSoonCount,
+    expiredContractsCount,
+    neverAssessedVendors,
+    neverAssessedCount,
   ] = await Promise.all([
     prisma.vendor.count(),
     prisma.vendor.groupBy({ by: ["riskTier"], _count: true }),
@@ -65,6 +73,19 @@ export default async function DashboardPage() {
         },
       },
     }),
+    prisma.vendor.findMany({
+      where: { contractEnd: { lte: in90Days } },
+      orderBy: { contractEnd: "asc" },
+      take: 8,
+    }),
+    prisma.vendor.count({ where: { contractEnd: { lte: in90Days } } }),
+    prisma.vendor.count({ where: { contractEnd: { lt: new Date() } } }),
+    prisma.vendor.findMany({
+      where: { assessments: { none: { status: "COMPLETED" } } },
+      orderBy: { name: "asc" },
+      take: 8,
+    }),
+    prisma.vendor.count({ where: { assessments: { none: { status: "COMPLETED" } } } }),
   ]);
 
   const tierCounts = Object.fromEntries(vendorsByTierRaw.map((r) => [r.riskTier, r._count]));
@@ -100,7 +121,7 @@ export default async function DashboardPage() {
     <div>
       <PageHeader title="Dashboard" description="Third-party risk posture at a glance." />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total vendors" value={totalVendors} href="/vendors" />
         <StatCard
           label="Critical / High tier"
@@ -125,6 +146,18 @@ export default async function DashboardPage() {
           value={highestResidual ? highestResidual.residual : "—"}
           sub={highestResidual ? highestResidual.name : "No vendors yet"}
           href={highestResidual ? `/vendors/${highestResidual.id}` : "/vendors"}
+        />
+        <StatCard
+          label="Contracts expiring soon"
+          value={contractsExpiringSoonCount}
+          sub={`within 90 days${expiredContractsCount > 0 ? ` · ${expiredContractsCount} expired` : ""}`}
+          href="/vendors"
+        />
+        <StatCard
+          label="Never assessed"
+          value={neverAssessedCount}
+          sub={`${totalVendors - neverAssessedCount}/${totalVendors} vendors have a completed assessment`}
+          href="/vendors"
         />
       </div>
 
@@ -191,6 +224,86 @@ export default async function DashboardPage() {
           breakdown. Separate from the manually-assigned risk tier shown elsewhere.
         </p>
       </section>
+
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-slate-900">Upcoming contract renewals</h2>
+          {contractsExpiringSoon.length === 0 ? (
+            <EmptyState title="Nothing expiring soon" description="No vendor contracts end within the next 90 days." />
+          ) : (
+            <Card className="divide-y divide-slate-100">
+              {contractsExpiringSoon.map((v) => {
+                const days = daysUntil(v.contractEnd);
+                const expired = days !== null && days < 0;
+                const urgent = days !== null && days >= 0 && days <= 30;
+                return (
+                  <Link
+                    key={v.id}
+                    href={`/vendors/${v.id}`}
+                    className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-slate-50"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{v.name}</p>
+                      <p className="text-xs text-slate-500">{v.category ?? "—"}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-medium ${expired || urgent ? "text-red-600" : "text-slate-500"}`}>
+                        {formatDate(v.contractEnd)}
+                      </span>
+                      <Badge
+                        className={
+                          expired
+                            ? "bg-red-100 text-red-800 ring-red-600/20"
+                            : urgent
+                              ? "bg-amber-100 text-amber-800 ring-amber-600/20"
+                              : "bg-slate-100 text-slate-700 ring-slate-500/20"
+                        }
+                      >
+                        {expired ? `Expired ${Math.abs(days ?? 0)}d ago` : `Due in ${days}d`}
+                      </Badge>
+                    </div>
+                  </Link>
+                );
+              })}
+            </Card>
+          )}
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-slate-900">Never assessed</h2>
+          {neverAssessedVendors.length === 0 ? (
+            <EmptyState title="Full coverage" description="Every vendor has at least one completed assessment." />
+          ) : (
+            <Card className="divide-y divide-slate-100">
+              {neverAssessedVendors.map((v) => (
+                <Link
+                  key={v.id}
+                  href={`/assessments/new?vendorId=${v.id}`}
+                  className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-slate-50"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">{v.name}</p>
+                    <p className="text-xs text-slate-500">{v.category ?? "—"}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={TIER_BADGE[v.riskTier]}>{label(v.riskTier)}</Badge>
+                    <span className="text-xs font-medium text-slate-500">Start assessment →</span>
+                  </div>
+                </Link>
+              ))}
+            </Card>
+          )}
+          {neverAssessedCount > neverAssessedVendors.length ? (
+            <p className="mt-2 text-xs text-slate-400">
+              Showing {neverAssessedVendors.length} of {neverAssessedCount} — see{" "}
+              <Link href="/vendors" className="underline underline-offset-2">
+                all vendors
+              </Link>
+              .
+            </p>
+          ) : null}
+        </section>
+      </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section>
