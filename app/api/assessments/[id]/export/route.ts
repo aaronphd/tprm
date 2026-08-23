@@ -29,7 +29,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           },
         },
       },
-      responses: true,
+      responses: { include: { evidence: true } },
     },
   });
 
@@ -40,7 +40,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const maturityModel = assessment.framework.maturityModel as unknown as MaturityModel;
   const score = scoreAssessment(assessment.framework.domains, assessment.responses, assessment.targetMaturity, maturityModel);
 
-  let csv = csvRow(["Domain Code", "Domain Title", "Control Code", "Control Title", "Maturity", "Maturity Label", "Status", "Notes"]);
+  let csv = csvRow(["Domain Code", "Domain Title", "Control Code", "Control Title", "Maturity", "Maturity Label", "Status", "Notes", "Evidence"]);
   for (const domain of score.domains) {
     for (const control of domain.controls) {
       csv += csvRow([
@@ -52,6 +52,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         maturityLabel(control.maturity, maturityModel.levels),
         control.status,
         control.notes ?? "",
+        control.evidence.map((e) => `${e.title} (${e.url})`).join(" | "),
       ]);
     }
   }

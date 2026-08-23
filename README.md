@@ -38,9 +38,9 @@ is enough.
   for.
 - **Assessments** (`/organizations/[id]`, `/assessments/[id]`) — pick a framework,
   start an assessment, then work through every control: a status (Not
-  Implemented / Partial / Implemented / Not Applicable) and, for applicable
-  controls, a maturity rating on that framework's own maturity model, plus
-  optional notes/evidence. Every change autosaves.
+  Implemented / Partial / Implemented / Not Applicable), for applicable
+  controls a maturity rating on that framework's own maturity model, a free-text
+  notes field, and evidence links (see "Evidence" below). Every change autosaves.
 - **Results** (`/assessments/[id]/results`) — overall readiness percentage and
   band (Initial/Developing/Defined/Managed/Optimized), a readiness-by-domain
   breakdown, and a gap list of every control scoring below the assessment's
@@ -85,6 +85,26 @@ A new assessment's default target maturity is computed from its framework's
 own model (the level at the midpoint of the scale — e.g. "Defined" on the
 default 0–5 model), not a hardcoded literal — see `createAssessment` in
 `lib/actions/assessments.ts`.
+
+## Evidence
+
+Each control can carry any number of evidence links — a title, a URL, and an
+optional note (`Evidence`, one-to-many off `Response`). This app stores the
+link, not the file: evidence lives wherever it already does (SharePoint,
+Drive, a signed policy doc, a screenshot host) and this just keeps a
+pointer to it per control, same pattern as the "Documents & Evidence" feature
+on the sibling vendor-TPRM app in this repo. Add/remove evidence from the
+control row in the assessment workspace (`components/EvidenceList.tsx`,
+`lib/actions/evidence.ts`); it shows up on the gap list on the results page
+and in the CSV export (an `Evidence` column, `title (url)` pairs). Attaching
+evidence to a control that has no status/maturity recorded yet still works —
+it creates the underlying `Response` row on demand, same as answering the
+control would.
+
+There's no file upload or storage in the app itself — if you need evidence to
+live inside the app rather than linked from elsewhere, that's a heavier
+follow-up (file storage, upload/download routes, size/type limits), not
+covered here.
 
 ## Notes on the seeded control data
 

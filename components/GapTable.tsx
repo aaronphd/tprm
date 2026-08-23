@@ -27,6 +27,7 @@ export function GapTable({
             <th className="px-4 py-2 font-medium">Control</th>
             <th className="px-4 py-2 font-medium">Current</th>
             <th className="px-4 py-2 font-medium">Notes</th>
+            <th className="px-4 py-2 font-medium">Evidence</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -42,6 +43,26 @@ export function GapTable({
                 {maturityLabel(gap.control.maturity, maturityLevels)}
               </td>
               <td className="px-4 py-2.5 text-slate-500">{gap.control.notes ?? "—"}</td>
+              <td className="px-4 py-2.5 text-slate-500">
+                {gap.control.evidence.length === 0 ? (
+                  "—"
+                ) : (
+                  <ul className="space-y-0.5">
+                    {gap.control.evidence.map((e) => (
+                      <li key={e.id}>
+                        <a
+                          href={e.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-500"
+                        >
+                          {e.title}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>

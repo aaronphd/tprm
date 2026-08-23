@@ -1,4 +1,4 @@
-import type { Control, Domain, Response, ResponseStatus } from "@prisma/client";
+import type { Control, Domain, Evidence, Response, ResponseStatus } from "@prisma/client";
 import type { MaturityLevel, MaturityModel } from "@/prisma/data/types";
 
 export type { MaturityLevel, MaturityModel };
@@ -21,11 +21,13 @@ export function readinessBand(percentage: number): string {
 }
 
 type DomainWithControls = Domain & { controls: Control[] };
+type ResponseWithEvidence = Response & { evidence: Evidence[] };
 
 export interface ScoredControl extends Control {
   maturity: number | null;
   status: ResponseStatus;
   notes: string | null;
+  evidence: Evidence[];
 }
 
 export interface ScoredDomain {
@@ -60,7 +62,7 @@ const DEFAULT_STATUS: ResponseStatus = "NOT_IMPLEMENTED";
 
 export function scoreAssessment(
   domains: DomainWithControls[],
-  responses: Response[],
+  responses: ResponseWithEvidence[],
   targetMaturity: number,
   maturityModel: MaturityModel,
 ): AssessmentScore {
@@ -75,6 +77,7 @@ export function scoreAssessment(
         maturity: response?.maturity ?? null,
         status: response?.status ?? DEFAULT_STATUS,
         notes: response?.notes ?? null,
+        evidence: response?.evidence ?? [],
       };
     });
 

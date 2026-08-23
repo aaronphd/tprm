@@ -111,5 +111,17 @@ model Response {
   notes        String?
   updatedAt    DateTime       @updatedAt
 
+  evidence Evidence[]
+
   @@unique([assessmentId, controlId])
+}
+
+model Evidence {
+  id         String   @id @default(cuid())
+  response   Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  responseId String
+  title      String
+  url        String
+  note       String?
+  createdAt  DateTime @default(now())
 }

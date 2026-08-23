@@ -26,7 +26,7 @@ export default async function AssessmentWorkspacePage({
           },
         },
       },
-      responses: true,
+      responses: { include: { evidence: true } },
     },
   });
 
@@ -114,6 +114,7 @@ export default async function AssessmentWorkspacePage({
                       initialMaturity={response?.maturity ?? null}
                       initialStatus={response?.status ?? "NOT_IMPLEMENTED"}
                       initialNotes={response?.notes ?? null}
+                      initialEvidence={response?.evidence ?? []}
                     />
                   );
                 })}

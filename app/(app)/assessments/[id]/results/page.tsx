@@ -28,7 +28,7 @@ export default async function AssessmentResultsPage({
           },
         },
       },
-      responses: true,
+      responses: { include: { evidence: true } },
     },
   });
 

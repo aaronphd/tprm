@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import type { ResponseStatus } from "@prisma/client";
 import { saveResponse } from "@/lib/actions/responses";
 import type { MaturityLevel } from "@/lib/scoring";
+import { EvidenceList, type EvidenceItem } from "@/components/EvidenceList";
 
 interface Props {
   assessmentId: string;
@@ -12,9 +13,18 @@ interface Props {
   initialMaturity: number | null;
   initialStatus: ResponseStatus;
   initialNotes: string | null;
+  initialEvidence: EvidenceItem[];
 }
 
-export function ControlRow({ assessmentId, control, maturityLevels, initialMaturity, initialStatus, initialNotes }: Props) {
+export function ControlRow({
+  assessmentId,
+  control,
+  maturityLevels,
+  initialMaturity,
+  initialStatus,
+  initialNotes,
+  initialEvidence,
+}: Props) {
   const [maturity, setMaturity] = useState(initialMaturity);
   const [status, setStatus] = useState<ResponseStatus>(initialStatus);
   const [notes, setNotes] = useState(initialNotes ?? "");
@@ -99,6 +109,8 @@ export function ControlRow({ assessmentId, control, maturityLevels, initialMatur
       <div className="mt-1 h-4 text-right text-xs text-slate-400">
         {isPending ? "Saving…" : saved ? "Saved" : ""}
       </div>
+
+      <EvidenceList assessmentId={assessmentId} controlId={control.id} initialEvidence={initialEvidence} />
     </div>
   );
 }
