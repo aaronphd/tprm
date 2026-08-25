@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "file:/app/data/prod.db"
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env — generate one with: openssl rand -base64 32}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NAME: ${ADMIN_NAME:-}
+      TRIAL_ENDS_AT: ${TRIAL_ENDS_AT:-}
+    volumes:
+      - tprm-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  tprm-data:

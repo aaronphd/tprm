@@ -12,6 +12,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// A login account for this self-hosted instance. Single-tenant: every
+// user sees the same data, this just gates who can log in.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+}
+
 model Vendor {
   id             String    @id @default(cuid())
   name           String

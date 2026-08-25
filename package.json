@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "prisma db seed",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "create-admin": "node -r dotenv/config scripts/bootstrap-admin.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

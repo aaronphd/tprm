@@ -11,18 +11,26 @@ Built with Next.js (App Router), TypeScript, Tailwind CSS, and Prisma
 
 ```bash
 npm install
-cp .env.example .env   # sets DATABASE_URL; .env itself is gitignored
-npx prisma migrate dev # first run only: creates prisma/dev.db
-npm run db:seed        # seeds the questionnaire template + sample vendors
+cp .env.example .env             # sets DATABASE_URL; .env itself is gitignored
+# open .env and set AUTH_SECRET — generate one with: openssl rand -base64 32
+npx prisma migrate dev           # first run only: creates prisma/dev.db
+npm run db:seed                  # seeds the questionnaire template + sample vendors
+ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=changeme npm run create-admin
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000 and log in with the admin account you just created.
 
-On later runs, once `.env` and `prisma/dev.db` already exist, `npm run dev` alone is enough.
+On later runs, once `.env`, `prisma/dev.db`, and your admin account already exist, `npm run dev` alone is enough.
+
+Every route requires a login (see `src/proxy.ts`) — there's no public page. Add more accounts the same way, by re-running `create-admin` with a different `ADMIN_EMAIL`/`ADMIN_PASSWORD`, or directly via `npx prisma studio`.
 
 ## What's here
 
+- **Login** — every route is gated behind a session cookie (see
+  "Deploying to a customer" below for how accounts get created). No
+  self-serve signup; this is built for one company's/customer's internal
+  use, not a multi-tenant SaaS.
 - **Vendors** (`/vendors`) — inventory of third parties with risk tier
   (Critical/High/Medium/Low), status, ownership, and contract dates.
 - **Assessments** (`/assessments`) — security questionnaires assigned to a
@@ -145,6 +153,56 @@ All six are assignable per-vendor from the "New assessment" screen. Edit
 `prisma/seed.ts` and re-run `npm run db:seed` to change any of them (it's
 idempotent — re-running it won't duplicate existing vendors/templates), or
 add more templates directly via Prisma Studio (`npx prisma studio`).
+
+## Deploying to a customer (self-hosted)
+
+Packaged as a single Docker image with a persistent SQLite volume — one
+container per customer, no shared multi-tenant infrastructure.
+
+```bash
+cp .env.example .env
+# set in .env:
+#   AUTH_SECRET      — openssl rand -base64 32
+#   ADMIN_EMAIL      — the customer's first login
+#   ADMIN_PASSWORD   — temporary; tell them to change it via Prisma Studio,
+#                      or just re-run create-admin with a new account later
+#   TRIAL_ENDS_AT    — optional, e.g. 2026-09-30, for a time-boxed trial
+
+docker compose up -d --build
+```
+
+That builds the image (multi-stage `Dockerfile`, Next.js standalone
+output), and on every container start (`docker-entrypoint.sh`) runs
+`prisma migrate deploy` against the volume-backed database and creates the
+admin account from `ADMIN_EMAIL`/`ADMIN_PASSWORD` if it doesn't exist yet
+(`scripts/bootstrap-admin.js` — safe to leave those two vars set
+permanently; it no-ops once the account exists). The app is then reachable
+on port 3000; put it behind a reverse proxy (nginx, Caddy, Cloudflare
+Tunnel, etc.) for TLS and a real domain.
+
+**Auth**: every route requires a login (`src/proxy.ts` — Next.js 16's
+proxy, née middleware — checks a signed session cookie). There's no
+self-serve signup; accounts are created via `ADMIN_EMAIL`/`ADMIN_PASSWORD`
+or `npx prisma studio` inside the running container. Sessions are
+stateless (HMAC-signed with `AUTH_SECRET`, no session table), so rotating
+`AUTH_SECRET` invalidates every logged-in session — useful if it ever
+leaks.
+
+**Trial expiration**: set `TRIAL_ENDS_AT` and every route redirects to a
+"trial has ended" page once that date passes, until it's unset or moved
+out (no license server, just a date check in the proxy).
+
+**Data**: everything lives in the `tprm-data` named volume as one SQLite
+file (`/app/data/prod.db` inside the container). Back it up with:
+
+```bash
+docker compose exec app sh -c 'sqlite3 /app/data/prod.db ".backup /app/data/backup.db"' \
+  && docker compose cp app:/app/data/backup.db ./backup-$(date +%F).db
+```
+
+Upgrading to a new version: pull the new code, `docker compose up -d --build`
+— the entrypoint's `prisma migrate deploy` applies any new migrations
+against the existing volume automatically.
 
 ## Useful commands
 
